@@ -61,7 +61,7 @@
 
 ## Getting Started
 
-### Cloud Instance 환경 설정 with Shell Script
+### 1. Cloud Instance 환경 설정 with Shell Script
 
 **Python 버전과 의존성 관리자(Poetry) 및 Python 관련 설치 및 설정**
 
@@ -79,6 +79,12 @@
     ```bash
     ./setup_env.sh
     ```
+   * _중간에 TimeZone 을 설정하라는 입력창이 나옵니다. Asia(6번) 선택 후 Seoul(69번) 을 선택해주시면 됩니다._
+
+4. Visual Studio Code 에서 Remote-SSH 확장을 사용하여 설정한 경우, Remote Instance 에서 아래의 명령어를 실행해야 수정사항이 정상적으로 적용됩니다.
+   ```bash
+   pkill -f vscode-server
+   ```
 
 **이 스크립트는 다음 내용을 설정합니다.**
 
@@ -89,7 +95,7 @@
 - 환경 변수 설정 (HOME, PATH, PYTHONPATH)
 - SSH 로그인 시 자동 설정들
 
-### 프로젝트 클론 및 의존성 설치
+### 2. 프로젝트 Clone 및 의존성 설치
 
 1. GPU 서버에 SSH 로 로그인한 다음, 아래 명령어로 이 Repository 를 Clone 합니다.
     ```bash
