@@ -115,3 +115,4 @@ Thumbs.db
 .viminfo
 log/
 logs/
+poetry.lock
