@@ -246,71 +246,161 @@ curl -sSL https://install.python-poetry.org | python3 -
 poetry --version
 ```
 
-> **참고**: Poetry가 PATH에 추가되지 않은 경우, [공식 문서의 PATH 설정 가이드](https://python-poetry.org/docs/#add-poetry-to-your-path)를 참고해주세요.
+> **참고**: Poetry가 PATH에 추가되지 않은 경우, [공식 문서의 PATH 설정 가이드](https://python-poetry.org/docs/#add-poetry-to-your-path)를
+> 참고해주세요.
 
-## Git 사용 규칙
+## 📢 Git 사용 규칙
 
-### 기본 작업 흐름
+본 프로젝트는 **GitHub Flow**를 채택하여 간단하고 효율적인 협업을 진행합니다.
 
-```bash
-git switch main
+### GitHub Flow 작업 프로세스
 
-git pull
+```mermaid
+flowchart LR
+    subgraph GitHub["☁️ GitHub (원격 저장소)"]
+        Issue[["📋 Issue 생성<br/>작업 내용 정의"]]
+        PR[["🔀 Pull Request 생성<br/>코드 병합 요청"]]
+        Review[["👀 Code Review<br/>팀원 리뷰 진행"]]
+        Approve{리뷰 결과}
+        Merge[["✅ Merge to main<br/>메인 브랜치 병합"]]
+        Close[["📌 Close Issue<br/>이슈 완료 처리"]]
+    end
 
-git branch feature/some-branch
+    subgraph Local["💻 Local Git (개발 환경)"]
+        Pull[["git pull origin main<br/>최신 코드 동기화"]]
+        Branch[["git branch feature/#이슈번호<br/>feature 브랜치 생성"]]
+        Switch[["git switch feature/#이슈번호<br/>브랜치 전환"]]
+        Code[["⌨️ 코드 작성<br/>기능 개발"]]
+        Status[["git status<br/>변경사항 확인"]]
+        Add[["git add .<br/>스테이징"]]
+        Commit[["git commit -m 'prefix: #이슈번호 메시지'<br/>커밋 생성"]]
+        Push[["git push origin feature/#이슈번호<br/>원격에 푸시"]]
+        Delete[["git branch -d feature/#이슈번호<br/>로컬 브랜치 삭제"]]
+    end
 
-git switch feature/some-branch
-
-# 작업 진행
-
-git status
-
-git add 작업한_파일
-
-git commit -m "prefix: 커밋 메시지"
-# prefix를 꼭 달아서 메시지를 작성합시다!
-
-git push origin feature/some-branch
-
-# GitHub에 들어가서 Pull Request(PR) 만들기
+    Start([프로젝트 시작]) --> Issue
+    Issue --> Pull
+    Pull --> Branch
+    Branch --> Switch
+    Switch --> Code
+    Code --> Status
+    Status --> Add
+    Add --> Commit
+    Commit --> Push
+    Push -.->|브라우저에서 작업| PR
+    PR --> Review
+    Review --> Approve
+    Approve -->|수정 요청| Code
+    Approve -->|승인| Merge
+    Merge --> Close
+    Close --> Delete
+    Delete --> End([작업 완료])
+    style Start fill: #e1f5e1
+    style End fill: #e1f5e1
+    style Issue fill: #fff3cd
+    style PR fill: #fff3cd
+    style Review fill: #cfe2ff
+    style Merge fill: #d1f2eb
+    style Code fill: #ffe6e6
 ```
 
-### Commit Message Convention
+### 작업 시작 전 체크리스트
 
-#### 1. Commit 제목
+- [ ] GitHub에서 Issue가 생성되었는가?
+- [ ] Issue가 나에게 할당되었는가?
+- [ ] 작업 내용과 완료 조건이 명확한가?
 
-commit 제목은 commit을 설명하는 문장형이 아닌 구나 절의 형태로 작성
+### Git 명령어 순서
 
-#### 2. Importance of Capitalize
+```bash
+# 1. GitHub에서 Issue 생성 및 번호 확인 (#12)
 
-importanceofcapitalize가 아닌 `Importance of Capitalize`
+# 2. 최신 main 브랜치에서 시작
+git switch main
+git pull origin main
 
-#### 3. Prefix 꼭 달기
+# 3. Issue 번호를 포함한 feature 브랜치 생성
+git branch feature/12-add-rag-module
+git switch feature/12-add-rag-module
 
-**주요 Prefix:**
+# 4. 개발 작업 진행
+# ... 코드 작성 ...
 
-- `feat`: 기능 개발 관련
-- `fix`: 오류 개선 혹은 버그 패치
-- `docs`: 문서화 작업
-- `test`: test 관련
-- `conf`: 환경설정 관련
-- `build`: 빌드 작업 관련
-- `ci`: Continuous Integration 관련
-- `chore`: 패키지 매니저, 스크립트 등
-- `style`: 코드 포맷팅 관련
+# 5. 변경사항 확인 및 커밋
+git status
+git add .
+git commit -m "feat: #12 RAG 모듈 기본 구조 구현"
 
-### Branch 이름 Convention
+# 6. 원격 저장소에 푸시
+git push origin feature/12-add-rag-module
 
-- **feature/[github 이슈 번호]-[기능명]** - 새로운 기능 개발 시 (예: feature/12-login-page)
-- **fix/[github 이슈 번호]-[버그명]** - 버그 수정 시 (예: fix/3-header-alignment)
-- **docs/[github 이슈 번호]-[문서명]** - 문서 관련 작업 시 (예: docs/4-api-guide)
+# 7. GitHub에서 Pull Request 생성
+# 8. 코드 리뷰 및 병합 후 로컬 브랜치 삭제
+git switch main
+git pull origin main
+git branch -d feature/12-add-rag-module
+```
+
+### Branch 네이밍 규칙
+
+GitHub Flow는 단순한 브랜치 전략을 사용합니다. `main` 브랜치는 항상 배포 가능한 상태를 유지하며, 모든 기능은 별도의 feature 브랜치에서 개발합니다.
+
+| 브랜치 타입      | 네이밍 규칙                 | 예시                      |
+|-------------|------------------------|-------------------------|
+| **feature** | `feature/[이슈번호]-[기능명]` | `feature/12-login-page` |
+| **fix**     | `fix/[이슈번호]-[버그명]`     | `fix/23-api-error`      |
+| **docs**    | `docs/[이슈번호]-[문서명]`    | `docs/5-readme-update`  |
+
+### Commit Message 컨벤션
+
+모든 커밋 메시지는 다음 형식을 따릅니다: `prefix: #이슈번호 설명`
+
+#### 작성 규칙
+
+1. **제목은 명령문으로 작성** (예: "추가한다" ❌ → "추가" ⭕)
+2. **첫 글자는 대문자로** (예: "add feature" ❌ → "Add feature" ⭕)
+3. **Issue 번호 포함** (예: `feat: #12 Add RAG module`)
+
+#### Prefix 종류
+
+| Prefix     | 용도                  | 예시                                       |
+|------------|---------------------|------------------------------------------|
+| `feat`     | 새로운 기능 추가           | `feat: #12 Add RAG search functionality` |
+| `fix`      | 버그 수정               | `fix: #23 Resolve API timeout error`     |
+| `docs`     | 문서 수정               | `docs: #5 Update installation guide`     |
+| `style`    | 코드 스타일 변경 (기능 변경 X) | `style: #8 Format code with black`       |
+| `refactor` | 코드 리팩토링             | `refactor: #15 Restructure LLM module`   |
+| `test`     | 테스트 추가/수정           | `test: #18 Add unit tests for retriever` |
+| `chore`    | 기타 변경사항             | `chore: #20 Update dependencies`         |
 
 ### Pull Request 규칙
 
-1. PR 제목은 작업 내용을 명확하게 설명
-2. PR 설명에는 변경 사항과 테스트 방법 포함
-3. 최소 1명 이상의 리뷰어 승인 필요
-4. 모든 테스트 통과 후 머지
+GitHub Flow 의 핵심은 Pull Request를 통한 코드 리뷰입니다.
+
+#### PR 생성 시 필수사항
+
+> Template 으로 아래 내용이 작성됩니다.
+
+- **본문 포함 내용**
+    - 주요 변경사항 목록
+    - 테스트 방법
+- **연결**: Issue와 연결 (`Closes #12` 또는 `Fixes #12`)
+- **리뷰어**: 반드시 1명 지정
+- **Labels**: 작업 유형에 맞는 라벨 추가
+
+#### 머지 조건
+
+- ✅ 최소 1명의 리뷰어 승인
+- ✅ 모든 conversation resolved
+- ✅ CI/CD 체크 통과 (설정된 경우)
+- ✅ main 브랜치와 충돌 없음
+
+### ⚠️ 주의사항
+
+- **절대 main 브랜치에 직접 push 금지**
+- 작업 시작 전 항상 최신 main 브랜치를 pull
+- 커밋은 작은 단위로 자주 수행
+- PR은 리뷰 가능한 크기로 유지 (최대 500줄 권장)
 
 ## 🚨 트러블 슈팅
 
