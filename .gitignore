@@ -115,3 +115,10 @@ Thumbs.db
 .viminfo
 log/
 logs/
+poetry.lock
+.gitattributes
+docs/gpu_install.md
+*.sh
+
+
+notebooks/
