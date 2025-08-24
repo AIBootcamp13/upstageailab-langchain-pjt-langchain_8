@@ -12,7 +12,7 @@ from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough
-
+from src.prompt_loader import load_prompt
 from src.config import ROOT_DIR
 from src.logger import get_logger
 
@@ -23,6 +23,10 @@ from src.logger import get_logger
 
 # 로거 초기화
 logger = get_logger(__name__)
+
+# Load the prompt from the YAML file
+rag_prompt_template_string = load_prompt("generation_prompt") 
+prompt = ChatPromptTemplate.from_template(rag_prompt_template_string)
 
 # --- 설정 ---
 VECTOR_STORE_PATH = ROOT_DIR / "vector_store" / "chroma_db"

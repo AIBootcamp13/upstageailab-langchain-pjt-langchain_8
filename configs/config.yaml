@@ -1,0 +1,7 @@
+# config.yaml
+models:
+  embedding: "BAAI/bge-m3"
+  llm: "gpt-oss:20b"
+
+vector_store:
+  name: "chroma_db_blog_posts"

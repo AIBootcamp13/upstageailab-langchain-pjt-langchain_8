@@ -1,3 +1,84 @@
+Of course. Here is an assessment of what is needed to add the GitHub blog posting feature and a plan to implement it.
+
+### **Assessment of Current State**
+
+The project is already well-equipped for this feature. The core logic exists but needs to be integrated into the main application workflow.
+
+* [cite_start]**Existing Tool:** The file `scripts/tools.py` contains a ready-made LangChain tool called `post_to_github_blog`[cite: 90]. [cite_start]This tool is designed to publish content to a GitHub repository's `_posts` directory using the GitHub API[cite: 90].
+* [cite_start]**Agent Example:** The file `scripts/agent_script.py` provides a complete example of how to create a LangChain agent that can use the `post_to_github_blog` tool[cite: 80].
+* [cite_start]**Missing Integration:** The main application entry point, `src/main.py`, currently generates the blog post and saves it locally[cite: 31, 78]. It does not yet have any logic to call the agent or the publishing tool.
+* [cite_start]**Configuration:** The tool requires a GitHub Personal Access Token (PAT), a repository owner (username), and a repository name[cite: 91]. [cite_start]This information needs to be configured by the user, ideally through the existing `.env` file system[cite: 12, 67].
+
+### **Implementation Plan**
+
+The plan is to integrate the existing agent logic into the main generation script and update the documentation accordingly.
+
+**Phase 1: Centralize Configuration**
+
+1.  **Update `src/config.py`:**
+    * Add variables to load `GITHUB_PAT`, `GITHUB_REPO_OWNER`, and `GITHUB_REPO_NAME` from the `.env` file. [cite_start]This follows the existing pattern for handling sensitive keys[cite: 95].
+
+2.  **Refactor `scripts/tools.py`:**
+    * Modify the `post_to_github_blog` function. [cite_start]Instead of using hardcoded placeholder strings for `repo_owner` and `repo_name`, import and use the new variables from `src/config.py`[cite: 91].
+
+**Phase 2: Integrate Agent into Main Workflow**
+
+1.  **Modify `src/main.py`:**
+    * Add a new command-line argument, such as `--publish`, that users can specify when they want to post the blog to GitHub.
+    * After a blog post is successfully generated, check if the `--publish` flag was used.
+    * [cite_start]If it was, implement the agent logic from `scripts/agent_script.py`[cite: 80, 81]. Instantiate the agent, provide it with the `post_to_github_blog` tool, and invoke it with the title and content of the generated blog post.
+    * [cite_start]Print the result from the agent (e.g., success URL or failure message) to the console[cite: 93].
+
+**Phase 3: Update Documentation**
+
+1.  **Update `docs/02_USAGE_GUIDE.md`:**
+    * [cite_start]In the "Prerequisites" section, add instructions for the user on how to create a GitHub Personal Access Token with `repo` permissions[cite: 65].
+    * [cite_start]Update the `.env` file example to include the new GitHub-related variables: `GITHUB_PAT`, `GITHUB_REPO_OWNER`, and `GITHUB_REPO_NAME`[cite: 67].
+    * [cite_start]In the "Step 3: Blog Post Generation" section, update the example command to show the new optional `--publish` flag and explain its purpose[cite: 76, 77].
+
+2.  **Update `README.md`:**
+    * Briefly mention the new capability of publishing directly to a GitHub blog under the "Implemented Features" section.
+    * [cite_start]Update the command in the "Usage" section to reflect the new `--publish` option[cite: 30].
+
+----
+Excellent, the blog is now set up and ready. Here is a checklist to track your progress as you implement the publishing feature.
+
+### ## ✅ Implementation Checklist
+
+**Phase 1: ⚙️ Configuration**
+
+* [cite_start][ ] **Update `.env` File**: Add the following three variables with your specific information[cite: 156, 211].
+    * `GITHUB_PAT="your_personal_access_token"`
+    * `GITHUB_REPO_OWNER="Wchoi189"`
+    * `GITHUB_REPO_NAME="Wchoi189.github.io"`
+* [cite_start][ ] **Update `src/config.py`**: Add logic to load the three new GitHub environment variables, similar to how `TAVILY_API_KEY` is loaded[cite: 239].
+* [cite_start][ ] **Refactor `scripts/tools.py`**: Modify the `post_to_github_blog` function to import and use the new configuration variables from `src/config.py` instead of the placeholder values[cite: 235].
+
+***
+
+**Phase 2: 🔌 Application Integration**
+
+* [cite_start][ ] **Modify `src/main.py`**: Add a command-line argument (e.g., `--publish`) to trigger the publishing workflow[cite: 154].
+* [ ] **Integrate Agent Logic in `src/main.py`**:
+    * Import the agent creation functions and the `post_to_github_blog` tool.
+    * Inside `main`, add a condition to check if the `--publish` flag is present.
+    * [cite_start]If it is, initialize the agent as shown in `scripts/agent_script.py`[cite: 224].
+    * [cite_start]Invoke the agent with the generated blog's title and content[cite: 225].
+    * Print the agent's final output to the console.
+
+***
+
+**Phase 3: 📚 Documentation**
+
+* [ ] **Update `docs/02_USAGE_GUIDE.md`**:
+    * [cite_start]Add a step in the "Prerequisites" section explaining how to create a GitHub Personal Access Token[cite: 209].
+    * [cite_start]Update the `.env` file example to include the new GitHub variables[cite: 211].
+    * [cite_start]Update the final command example to show the optional `--publish` flag[cite: 221].
+* [ ] **Update `README.md`**:
+    * Add "Directly publish to a GitHub Pages blog" to the "Implemented Features" list.
+    * [cite_start]Update the usage command example to include the `--publish` flag[cite: 174].
+
+----
 # **프로젝트 현황 요약 (2025년 8월 24일 기준)**
 
 ## **1. 프로젝트 개요**
