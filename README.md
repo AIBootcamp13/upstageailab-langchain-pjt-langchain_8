@@ -151,17 +151,16 @@ graph TD
 
     * 이 작업은 `PDF` 파일당 한 번만 실행하면 됩니다.
 
-    ```python
-    python src/indexing.py
+    ```bash
+    python -m src.indexing
     ```
 
 3. **블로그 포스트 생성:**
 
     * 원하는 주제와 함께 메인 생성 스크립트를 실행합니다.
 
-    ```python
-    python src/main.py --topic "최신 AI 아키텍처에 대한 심층 분석"
+    ```bash
+    python -m src.main --topic "최신 AI 아키텍처에 대한 심층 분석"
     ```
-
 
     * 생성된 블로그 포스트는 `output/` 디렉토리에 저장됩니다.

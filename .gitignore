@@ -121,5 +121,13 @@ docs/gpu_install.md
 *.sh
 docs/build/
 *.pdf
-# docs/*.md
+
+# To keep directory structure, add .gitkeep or .empty files to ignored folders
 notebooks/
+!notebooks/.gitkeep
+data/
+!data/.gitkeep
+vector_store/
+!vector_store/.gitkeep
+output/
+!output/.gitkeep
