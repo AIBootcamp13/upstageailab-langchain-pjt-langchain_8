@@ -24,9 +24,9 @@ TAVILY_API_KEY="tvly-..."
 
 ### **3. Ollama 로컬 LLM 서버 실행**
 
-터미널을 열고 gpt-oss-20b 모델을 실행하여 로컬 LLM 서버를 활성화합니다.
+터미널을 열고 gpt-oss:20b 모델을 실행하여 로컬 LLM 서버를 활성화합니다.
 
-ollama run gpt-oss-20b
+ollama run gpt-oss:20b
 
 ### **4. 소스 PDF 파일 추가**
 

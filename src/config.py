@@ -56,7 +56,7 @@ TAVILY_API_KEY = get_env_or_raise("TAVILY_API_KEY")
 # --- 모델 및 임베딩 설정 ---
 # 여기서 모델을 쉽게 교체할 수 있습니다.
 EMBEDDING_MODEL = "BAAI/bge-m3"  # 한국어 지원 및 고성능 모델
-LLM_MODEL = "gpt-oss-20b"  # Ollama 로컬 모델
+LLM_MODEL = "gpt-oss:20b"  # Ollama 로컬 모델
 
 # --- 벡터 스토어 설정 ---
 VECTOR_STORE_NAME = "chroma_db_blog_posts"

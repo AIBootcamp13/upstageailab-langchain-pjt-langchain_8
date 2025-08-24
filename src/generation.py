@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 # --- 설정 ---
 VECTOR_STORE_PATH = ROOT_DIR / "vector_store" / "chroma_db"
 EMBEDDING_MODEL_NAME = "BAAI/bge-m3"
-LLM_MODEL = "gpt-oss-20b"  # README.md에 명시된 로컬 LLM
+LLM_MODEL = "gpt-oss:20b"  # README.md에 명시된 로컬 LLM
 
 
 class BlogGenerator:

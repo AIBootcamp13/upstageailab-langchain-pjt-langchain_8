@@ -23,7 +23,7 @@
     `ChromaDB`
 
 **LLM APIs:**
-    `OpenAI GPT Models`, `Upstage API`, `Ollama (gpt-oss-20b)`
+    `OpenAI GPT Models`, `Upstage API`, `Ollama (gpt-oss:20b)`
 
 **개발 도구:**
     `Poetry`, `Git/GitHub`, `Ruff`, `Pre-commit`, `JupyterLab`
@@ -37,7 +37,7 @@
 | 메모리 (RAM) | `251.62 GiB` |
 | GPU | `4 × NVIDIA GeForce RTX 3090 (24GB)` |
 | NVIDIA 드라이버 버전 | `535.86.10` |
-| 비고 | gpt-oss-20b 모델 실행 시 최소 `16GB` VRAM 권장 |
+| 비고 | gpt-oss:20b 모델 실행 시 최소 `16GB` VRAM 권장 |
 
 ## **📁 프로젝트 구조**
 
@@ -82,7 +82,7 @@ rag_blog_generator/
 
 * **로컬 LLM 연동:**
 
-    `Ollama`를 사용하여 `gpt-oss-20b`와 같은 강력한 오픈소스 모델을 로컬에서 실행하여 데이터 프라이버시를 보장하고 비용 없이 콘텐츠를 생성합니다.
+    `Ollama`를 사용하여 `gpt-oss:20b`와 같은 강력한 오픈소스 모델을 로컬에서 실행하여 데이터 프라이버시를 보장하고 비용 없이 콘텐츠를 생성합니다.
 
 * **모듈식 아키텍처:**
 
