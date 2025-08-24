@@ -119,6 +119,7 @@ poetry.lock
 .gitattributes
 docs/gpu_install.md
 *.sh
+docs/build/
 
 
 notebooks/
