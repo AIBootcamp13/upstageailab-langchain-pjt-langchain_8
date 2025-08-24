@@ -120,6 +120,6 @@ poetry.lock
 docs/gpu_install.md
 *.sh
 docs/build/
-
-
+*.pdf
+# docs/*.md
 notebooks/

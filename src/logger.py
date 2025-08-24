@@ -1,5 +1,7 @@
+# src/logger.py
 import json
 import logging
+import logging.handlers  # 명시적 임포트 추가
 from datetime import datetime
 from pathlib import Path
 
@@ -25,27 +27,24 @@ class JsonFormatter(logging.Formatter):
             "message": record.getMessage(),
         }
 
-        # extra fields 추가
-        if hasattr(record, "extras"):
-            log_data.update(record.extras)
-
-        # request 관련 정보가 있다면 추가
-        request_attrs = ("request_id", "method", "path", "client_host", "request_body")
-        for attr in request_attrs:
-            if hasattr(record, attr):
-                log_data[attr] = getattr(record, attr)
+        # extra 필드는 record의 __dict__에 동적으로 추가되므로,
+        # 표준 속성이 아닌 키들을 식별하여 추가합니다.
+        standard_keys = set(logging.LogRecord("", 0, "", 0, "", (), None).__dict__.keys())
+        extra_data = {k: v for k, v in record.__dict__.items() if k not in standard_keys}
+        if extra_data:
+            log_data.update(extra_data)
 
         # exception 정보가 있다면 추가
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
 
-        return json.dumps(log_data)
+        return json.dumps(log_data, ensure_ascii=False)
 
 
 def get_logger(logger_name: str) -> logging.Logger:
     logger = logging.getLogger(logger_name)
 
-    if logger.handlers:  # 이미 설정됨
+    if logger.handlers:  # 핸들러가 이미 설정되었다면, 다시 설정하지 않음
         return logger
 
     log_file_path = _get_log_path(logger_name)
@@ -61,7 +60,7 @@ def get_logger(logger_name: str) -> logging.Logger:
 
 def _get_log_path(logger_name: str) -> Path:
     """로그 파일의 전체 경로 반환"""
-    # 날짜별로 log 가 모이도록
+    # 날짜별로 로그가 모이도록
     date = datetime.now(config.TIMEZONE).strftime(DATE_FORMAT)
     current_log_dir: Path = config.LOG_ROOT_DIR / date
     current_log_dir.mkdir(parents=True, exist_ok=True)
@@ -75,17 +74,10 @@ def _setup_logger(
     log_file_max_bytes: int,
     log_file_backup_count: int,
 ):
-    """logger 설정(콘솔 및 파일)
-
-    Args:
-        logger: 설정할 로거 인스턴스
-        log_level: 로그 레벨
-        log_file_path: 로그 파일 경로
-        log_file_max_bytes: 각 로그 파일의 최대 크기
-        log_file_backup_count: 보관할 백업 파일 수
-    """
+    """logger 설정(콘솔 및 파일)"""
     logger.setLevel(log_level)
 
+    # 콘솔 핸들러 설정
     console_handler = logging.StreamHandler()
     console_formatter = logging.Formatter(
         "[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s] %(message)s",
@@ -94,6 +86,7 @@ def _setup_logger(
     console_handler.setFormatter(console_formatter)
     logger.addHandler(console_handler)
 
+    # 파일 핸들러 설정 (RotatingFileHandler 사용)
     log_file_path.parent.mkdir(parents=True, exist_ok=True)
     file_handler = logging.handlers.RotatingFileHandler(
         filename=str(log_file_path),
