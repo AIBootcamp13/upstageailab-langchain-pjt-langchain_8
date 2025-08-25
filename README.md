@@ -70,6 +70,34 @@ rag_blog_generator/
 └── README.md                 # 프로젝트 설명 및 실행 방법 안내
 ```
 
+## 🖼️ 샘플 결과 화면
+
+아래는 실제 블로그 생성기 UI와 결과물 예시입니다.
+
+<p align="center">
+    <img src="docs/assets/images/demo/blog-home.png" width="600"><br>
+    <b>메인 페이지 화면</b><br>
+    <sub>Main page of the RAG-based blog generator.</sub>
+</p>
+
+<p align="center">
+    <img src="docs/assets/images/demo/blog-page-01.png" width="600"><br>
+    <b>블로그 도입부 예시</b><br>
+    <sub>Example of a generated blog post introduction.</sub>
+</p>
+
+<p align="center">
+    <img src="docs/assets/images/demo/blog-page-02.png" width="600"><br>
+    <b>본문 구조화 예시</b><br>
+    <sub>Blog post body with structured content.</sub>
+</p>
+
+<p align="center">
+    <img src="docs/assets/images/demo/blog-page-03.png" width="600"><br>
+    <b>마무리 및 요약</b><br>
+    <sub>Final section and summary of the generated blog post.</sub>
+</p>
+
 ## **💻 구현 기능**
 
 * **PDF 콘텐츠 기반 생성:**
