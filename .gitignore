@@ -129,5 +129,8 @@ data/
 !data/.gitkeep
 vector_store/
 !vector_store/.gitkeep
-output/
+output/*
+!/output/sample/*.md
+!/output/sample
 !output/.gitkeep
+
