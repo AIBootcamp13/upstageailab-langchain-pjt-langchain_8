@@ -1,37 +1,62 @@
+# src/document_preprocessor.py
 from pathlib import Path
-
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+# Import all three loaders from their correct locations
 from langchain_upstage.document_parse import UpstageDocumentParseLoader
+from langchain_community.document_loaders import PyMuPDFLoader
+from langchain_unstructured import UnstructuredLoader 
 
-from src.config import UPSTAGE_API_KEY
-
+# Import config values
+from src.config import (
+    INGESTION_PARSER, 
+    UPSTAGE_API_KEY, 
+    API_LOADER_CONFIG,
+    CHUNK_SIZE,
+    CHUNK_OVERLAP
+)
 
 class DocumentPreprocessor:
-    """
-    File IO 를 입력 받아서 langchain 의 Document list 로 만드는 모듈
-    document_loader 와 text_splitter 를 사용해서 전처리를 한다.
-    """
-
     def __init__(self, filepath: Path):
-        self.loader = UpstageDocumentParseLoader(
-            filepath, api_key=UPSTAGE_API_KEY, split="page", output_format="markdown"
+        self.filepath = filepath
+        self.parser_type = INGESTION_PARSER
+        
+        if self.parser_type == "api":
+            self.loader = UpstageDocumentParseLoader(
+                str(self.filepath), 
+                api_key=UPSTAGE_API_KEY, 
+                **API_LOADER_CONFIG
+            )
+        elif self.parser_type == "unstructured":
+            # --- FIX: Specify the language for better OCR accuracy ---
+            self.loader = UnstructuredLoader(
+                file_path=str(self.filepath), 
+                mode="paged",
+                strategy="hi_res",
+                languages=["kor"] # Specify Korean language pack for Tesseract
+            )
+        else: # Default to "local" (PyMuPDF)
+            self.loader = PyMuPDFLoader(str(self.filepath))
+
+        # Use the imported config values for the splitter
+        self.splitter = RecursiveCharacterTextSplitter(
+            chunk_size=CHUNK_SIZE, 
+            chunk_overlap=CHUNK_OVERLAP
         )
-        self.splitter = RecursiveCharacterTextSplitter(chunk_size=1024, chunk_overlap=256)
 
     def process(self) -> list[Document]:
         documents = self.loader.load()
-        return self.splitter.split_documents([self._sanitize_doc(doc) for doc in documents])
+        
+        if self.parser_type == "api":
+            sanitized_docs = [self._sanitize_doc(doc) for doc in documents]
+            return self.splitter.split_documents(sanitized_docs)
+        
+        return self.splitter.split_documents(documents)
 
     @staticmethod
     def _sanitize_doc(doc: Document) -> Document:
-        # UpstageDocumentParseLoader 를 사용할 경우,
-        # metadata 에 coordinates 가 들어있어 chromadb 를 만들때 문제가 발생한다.
-        # 그래서 그 데이터를 삭제한 primitive type 만 가지는 Document 를 만들어서 반환한다.
         meta = dict(doc.metadata)
         if "coordinates" in meta:
             meta.pop("coordinates")
-        return Document(
-            page_content=doc.page_content,
-            metadata=meta,
-        )
+        return Document(page_content=doc.page_content, metadata=meta)

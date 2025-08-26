@@ -129,3 +129,7 @@ output/
 scripts/comment_out_conda_in_bashrc.sh
 scripts/run_streamlit.sh
 vector_store/
+requirements.full.txt
+requirements.trimmed.txt
+requirements.txt
+poetry.toml
