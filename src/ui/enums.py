@@ -1,0 +1,17 @@
+from enum import Enum
+
+
+class SessionKey(str, Enum):
+    GITHUB_CLIENT = "github_client"
+    GITHUB_PAT = "github_pat"
+    GITHUB_REPO = "github_repo"
+
+    CURRENT_STAGE = "current_stage"
+
+    BLOG_DRAFT = "blog_draft"
+    BLOG_POST = "blog_post"
+    BLOG_CREATOR_AGENT = "blog_creator_agent"
+    MESSAGE_LIST = "message_list"
+
+    VECTOR_STORE = "vector_store"
+    RETRIEVER = "retriever"
