@@ -1,5 +1,26 @@
 # 03_CONTEXT_LOG.md: Project Summary
 
+Of course. Here is a summary of the changes to update your context log, including the switch to `PyMuPDF`.
+
+---
+## **Updated Context Log Summary**
+
+**Date**: August 26, 2025
+
+### **Project Update: Architectural Shift to Local-First RAG Processing**
+
+This update details the project's architectural evolution from an API-dependent workflow to a fully self-contained, local-first RAG pipeline. The primary motivation for this change was to resolve a critical dependency conflict and gain full control over the data processing workflow.
+
+* **Problem Identification**: The initial architecture, which used `langchain-upstage` to connect to the Upstage API for PDF parsing, created a dependency conflict. The client library required an older version of the `pypdf` package that was incompatible with other key libraries in the project, such as `llama-index`.
+
+* **Architectural Solution**: To resolve this, the project has pivoted to a self-contained architecture that handles all data processing locally without relying on external APIs for its core pipeline.
+    * **PDF Parsing**: The `UpstageDocumentParseLoader` has been replaced with a local, library-based solution. [cite_start]After analysis, **`PyMuPDF` was chosen** for its superior performance and excellent handling of Korean character encoding, ensuring high-quality text extraction directly within the environment. [cite: 229, 235]
+    * [cite_start]**Embedding**: The system now uses open-source `HuggingFaceEmbeddings` (e.g., `bge-base-en-v1.5` or `bge-m3`) instead of relying on the OpenAI API, bringing the embedding process in-house. [cite: 21, 25, 52]
+    * [cite_start]**LLM Execution**: The project continues to leverage **Ollama** for running powerful open-source LLMs locally, ensuring data privacy and cost efficiency. [cite: 6, 17]
+
+This strategic shift successfully resolves the dependency issues, eliminates external API costs for parsing, and provides greater control and stability over the entire RAG pipeline.
+
+----
 **Date:** August 26, 2025
 
 ### **Consolidated Project Summary**
