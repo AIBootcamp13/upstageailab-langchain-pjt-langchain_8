@@ -42,6 +42,9 @@ ROOT_DIR = find_project_root()
 LOG_ROOT_DIR = ROOT_DIR / "logs"
 LOG_ROOT_DIR.mkdir(parents=True, exist_ok=True)
 
+DATA_DIR = ROOT_DIR / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
 # %% 환경변수
 
 # OpenAI
