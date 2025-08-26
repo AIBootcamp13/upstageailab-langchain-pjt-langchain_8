@@ -39,13 +39,16 @@ ROOT_DIR = find_project_root()
 LOG_ROOT_DIR = ROOT_DIR / "logs"
 
 # --- YAML 설정 로드 ---
-CONFIG = load_config_from_yaml(ROOT_DIR / "configs" / "config.yaml") # <-- Path updated here
+CONFIG = load_config_from_yaml(ROOT_DIR / "configs" / "config.yaml")
 
 # --- 상세 디렉토리 경로 ---
 DATA_DIR = ROOT_DIR / "data"
 SOURCE_PDFS_DIR = DATA_DIR / "source_pdfs"
 VECTOR_STORE_DIR = ROOT_DIR / "vector_store"
-OUTPUT_DIR = ROOT_DIR / "output"
+
+# It defaults to "output" if not specified in the YAML.
+OUTPUT_DIR_NAME = CONFIG.get("paths", {}).get("output_dir", "output")
+OUTPUT_DIR = ROOT_DIR / OUTPUT_DIR_NAME
 
 # --- 시간대 설정 ---
 TIMEZONE = ZoneInfo("Asia/Seoul")
@@ -65,6 +68,12 @@ LLM_MODEL = CONFIG["models"]["llm"]
 # --- 벡터 스토어 설정 (from config.yaml) ---
 VECTOR_STORE_NAME = CONFIG["vector_store"]["name"]
 PERSIST_DIRECTORY = str(VECTOR_STORE_DIR / VECTOR_STORE_NAME)
+
+RETRIEVAL_LOCAL_K = CONFIG["retrieval"]["local_k"]
+RETRIEVAL_WEB_K = CONFIG["retrieval"]["web_k"]
+
+INGESTION_CHUNK_SIZE = CONFIG["ingestion"]["chunk_size"]
+INGESTION_CHUNK_OVERLAP = CONFIG["ingestion"]["chunk_overlap"]
 
 def initialize_directories():
     """프로젝트에 필요한 모든 디렉토리를 생성합니다."""

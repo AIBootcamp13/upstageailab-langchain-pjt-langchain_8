@@ -5,7 +5,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
 
+from src.config import INGESTION_CHUNK_SIZE, INGESTION_CHUNK_OVERLAP
 from src.logger import get_logger
+
 
 
 # 로거 초기화
@@ -26,8 +28,8 @@ class DocumentIngestor:
         """
         self.source_dir = Path(source_dir)
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,  # 청크 크기
-            chunk_overlap=200,  # 청크 간 중첩 크기
+            chunk_size=INGESTION_CHUNK_SIZE,  # 청크 크기
+            chunk_overlap=INGESTION_CHUNK_OVERLAP,  # 청크 간 중첩 크기
             length_function=len,
         )
         logger.info("DocumentIngestor가 초기화되었습니다.")
@@ -45,13 +47,32 @@ class DocumentIngestor:
         logger.info(f"'{self.source_dir}'에서 {len(pdf_files)}개의 PDF 파일을 찾았습니다.")
 
         for pdf_path in pdf_files:
+            # Prefer PyMuPDF (fitz) when available because it often handles
+            # CJK fonts and complex encodings better than pypdf-based loaders.
             try:
-                loader = PyPDFLoader(str(pdf_path))
-                pages = loader.load_and_split()
-                logger.info(f"'{pdf_path.name}' 파일을 로드하여 {len(pages)}개의 페이지로 분할했습니다.")
+                import fitz  # PyMuPDF
+
+                logger.info(f"Using PyMuPDF (fitz) to load '{pdf_path.name}'")
+                doc = fitz.open(str(pdf_path))
+                pages = []
+                for i in range(len(doc)):
+                    page = doc.load_page(i)
+                    text = page.get_text("text") or ""
+                    pages.append(Document(page_content=text, metadata={"source": str(pdf_path), "page": i + 1}))
+
+                logger.info(f"'{pdf_path.name}' 파일을 PyMuPDF로 로드하여 {len(pages)}개의 페이지로 분할했습니다.")
                 all_pages.extend(pages)
-            except Exception as e:
-                logger.error(f"'{pdf_path.name}' 파일 처리 중 오류 발생: {e}")
+
+            except Exception as e_fit:
+                # If PyMuPDF isn't installed or fails, fall back to PyPDFLoader
+                logger.warning(f"PyMuPDF unavailable or failed for '{pdf_path.name}': {e_fit}; falling back to PyPDFLoader")
+                try:
+                    loader = PyPDFLoader(str(pdf_path))
+                    pages = loader.load_and_split()
+                    logger.info(f"'{pdf_path.name}' 파일을 PyPDFLoader로 로드하여 {len(pages)}개의 페이지로 분할했습니다.")
+                    all_pages.extend(pages)
+                except Exception as e:
+                    logger.error(f"'{pdf_path.name}' 파일 처리 중 오류 발생: {e}")
 
         return all_pages
 

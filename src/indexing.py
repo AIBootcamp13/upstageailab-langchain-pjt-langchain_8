@@ -1,13 +1,17 @@
-__import__('pysqlite3')
 import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+try:
+    __import__('pysqlite3')
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except Exception:
+    pass
 # src/indexing.py
 import shutil
+from pathlib import Path
 
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 
-from src.config import ROOT_DIR
+from src.config import ROOT_DIR, EMBEDDING_MODEL, PERSIST_DIRECTORY, SOURCE_PDFS_DIR
 from src.ingestion import DocumentIngestor
 from src.logger import get_logger
 
@@ -15,13 +19,13 @@ from src.logger import get_logger
 # 로거 초기화
 logger = get_logger(__name__)
 
-# --- 설정 ---
+# --- 설정 (config에서 읽음) ---
 # PDF 문서가 저장된 디렉토리 경로
-PDF_DIRECTORY = str(ROOT_DIR / "data" / "source_pdfs")
+PDF_DIRECTORY = str(SOURCE_PDFS_DIR)
 # 벡터 스토어를 저장할 디렉토리 경로
-VECTOR_STORE_PATH = str(ROOT_DIR / "vector_store" / "chroma_db")
-# 사용할 임베딩 모델 이름 (README.md에 명시된 모델)
-EMBEDDING_MODEL_NAME = "BAAI/bge-m3"
+VECTOR_STORE_PATH = str(PERSIST_DIRECTORY)
+# 사용할 임베딩 모델 이름 (config.yaml에서 지정)
+EMBEDDING_MODEL_NAME = EMBEDDING_MODEL
 
 
 class VectorStoreManager:
@@ -68,7 +72,7 @@ class VectorStoreManager:
             return
 
         # 2. 기존 벡터 스토어 디렉토리 삭제
-        if (ROOT_DIR / "vector_store" / "chroma_db").exists():
+        if Path(self.store_path).exists():
             logger.warning(f"기존 벡터 스토어를 삭제합니다: {self.store_path}")
             shutil.rmtree(self.store_path)
 

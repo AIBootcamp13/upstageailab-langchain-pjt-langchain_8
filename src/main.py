@@ -1,9 +1,13 @@
 # src/main.py
 
-# sqlite3 호환성을 위해 최상단에 추가
-__import__('pysqlite3')
+# sqlite3 호환성: pysqlite3가 있으면 사용하고, 없으면 기본 sqlite3 사용
 import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+try:
+    __import__('pysqlite3')
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except Exception:
+    # pysqlite3가 없으면 기본 sqlite3를 사용합니다.
+    pass
 
 import argparse
 from pathlib import Path
@@ -15,6 +19,7 @@ from langchain_ollama import ChatOllama
 from scripts.tools import post_to_github_blog
 from src.config import LLM_MODEL, OUTPUT_DIR
 from src.generation import BlogGenerator
+from src.indexing import VectorStoreManager, PDF_DIRECTORY, VECTOR_STORE_PATH, EMBEDDING_MODEL_NAME
 from src.logger import get_logger
 
 # 로거 초기화
@@ -32,13 +37,27 @@ def extract_title(markdown_post: str) -> str:
         return "새 블로그 포스트"
 
 
-def main(topic: str, publish: bool):
+def main(topic: str | None, publish: bool, indexing: bool = False):
     """
     블로그 포스트를 생성하고 선택적으로 발행하는 메인 함수입니다.
     """
     logger.info(f"--- 주제: '{topic}'에 대한 블로그 포스트 생성을 시작합니다. ---")
     try:
-        # 1. 블로그 포스트 생성
+        # If indexing requested, run the indexing flow and exit
+        if indexing:
+            logger.info("--- 색인(indexing) 모드를 실행합니다. Vector store 생성 중... ---")
+            manager = VectorStoreManager(
+                pdf_dir=PDF_DIRECTORY,
+                store_path=VECTOR_STORE_PATH,
+                embedding_model=EMBEDDING_MODEL_NAME,
+            )
+            manager.create_vector_store()
+            return
+
+        # 1. 블로그 생성
+        if not topic:
+            raise ValueError("--topic을 지정하거나 --indexing 플래그를 사용하세요.")
+
         generator = BlogGenerator()
         generated_post = generator.generate(topic)
 
@@ -74,7 +93,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--topic",
         type=str,
-        required=True,
+        required=False,
         help="블로그 포스트의 주제를 입력하세요."
     )
     parser.add_argument(
@@ -82,6 +101,12 @@ if __name__ == "__main__":
         action="store_true", # 이 인자를 플래그로 만듭니다 (예: --publish)
         help="이 플래그를 설정하면 생성된 포스트를 GitHub 블로그에 게시합니다."
     )
+    parser.add_argument(
+        "--indexing",
+        action="store_true",
+        help="이 플래그를 설정하면 색인 모드를 활성화합니다."
+    )
+
     args = parser.parse_args()
 
-    main(args.topic, args.publish)
+    main(args.topic, args.publish, args.indexing)

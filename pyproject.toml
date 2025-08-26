@@ -29,7 +29,10 @@ dependencies = [
     "langchain-chroma (>=0.2.5,<0.3.0)",
     "langchain-ollama (>=0.3.7,<0.4.0)",
     "pyyaml (>=6.0.2,<7.0.0)",
-    "colorlog (>=6.9.0,<7.0.0)"
+    "colorlog (>=6.9.0,<7.0.0)",
+    "path (>=17.1.1,<18.0.0)",
+    "pymupdf (>=1.26.4,<2.0.0)",
+    "pdfplumber (>=0.11.7,<0.12.0)"
 ]
 
 [project.optional-dependencies]
@@ -43,6 +46,10 @@ dev = [
 
 [tool.poetry]
 package-mode = false
+packages = [ { include = "src" } ]
+
+[tool.poetry.group.dev.dependencies]
+pymupdf = "^1.26.4"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

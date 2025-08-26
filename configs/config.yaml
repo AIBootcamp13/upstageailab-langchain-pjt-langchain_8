@@ -1,7 +1,20 @@
-# config.yaml
+# configs/config.yaml
 models:
   embedding: "BAAI/bge-m3"
   llm: "gpt-oss:20b"
 
 vector_store:
   name: "chroma_db_blog_posts"
+
+# NEW: Settings for the retrieval process
+retrieval:
+  local_k: 5
+  web_k: 3
+
+# NEW: Settings for the data ingestion process
+ingestion:
+  chunk_size: 1000
+  chunk_overlap: 200
+
+paths:
+  output_dir: "output"  
