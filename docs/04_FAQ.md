@@ -1,9 +1,26 @@
+# 06_FAQ.md: 자주 하는 질문
 
-To install Ollama on Linux, run the following commands in your terminal:
-curl -fsSL https://ollama.com/install.sh | sh
+**최종 업데이트:** 2025년 8월 26일
 
-After installation, you can start the Ollama server with:
-ollama serve
+---
 
-If you need to use a specific model (like gpt-oss:20b), you can pull it with:
-ollama pull gpt-oss:20b
+### **Q1. `SQLite`가 프로젝트 의존성(dependency)으로 포함된 이유가 무엇인가요? `Chroma DB` 때문에 필요한 건가요?**
+
+네, 맞습니다. 로컬 환경에서 **`Chroma DB`를 사용할 때 `SQLite`는 핵심 의존성**입니다.
+
+`Chroma DB`는 벡터(vector) 데이터베이스이지만, 벡터와 관련된 메타데이터(예: 원본 텍스트, 문서 ID, 파일명 등)를 저장하고 관리하기 위해 내부적으로 `SQLite`를 사용합니다. 즉, `Chroma DB`가 벡터 검색을 효율적으로 수행하면서 관련 정보를 함께 조회할 수 있도록 `SQLite`가 데이터베이스 역할을 하는 것입니다.
+
+또한, RAG 프로젝트에서 흔히 사용되는 다른 라이브러리들도 다음과 같은 이유로 `SQLite`를 활용하는 경우가 많습니다.
+
+* **`LangChain`의 캐시 (Cache):** `LangChain`은 반복적인 LLM 호출 비용과 시간을 줄이기 위해 `SQLiteCache` 기능을 제공합니다. 이 기능을 사용하면 이전에 요청했던 질문과 답변을 로컬 `SQLite` 데이터베이스에 저장해두고 재사용할 수 있습니다.
+* **`LangGraph`의 체크포인트 (Checkpoint):** 복잡한 에이전트(agent)의 실행 상태를 저장하고 복원하기 위해 `SqliteSaver`를 사용할 수 있습니다. 이를 통해 작업이 중단되더라도 이전 상태에서 안전하게 작업을 재시작할 수 있습니다.
+
+### **Q2. `SQLite`는 오래된 운영체제(OS) 버전 때문에 필요한 의존성인가요?**
+
+아니요, 그렇지 않습니다. **`SQLite`의 사용은 운영체제(OS)의 버전과 전혀 관련이 없습니다.**
+
+`SQLite`를 사용하는 것은 `Chroma DB`나 `LangChain` 같은 최신 라이브러리 개발자들이 의도적으로 선택한 설계입니다. 그 이유는 다음과 같습니다.
+
+* **서버리스(Serverless) 및 이식성(Portable):** `SQLite`는 별도의 서버를 설치하거나 관리할 필요 없이, 단일 파일 형태로 데이터베이스를 운영할 수 있습니다. 이 덕분에 애플리케이션에 내장(embed)하기 쉽고 여러 환경으로 이동하기가 매우 편리합니다.
+* **경량성 및 효율성:** 매우 가볍고 빠르며 안정적이어서, 로컬 환경에서 데이터를 저장해야 하는 최신 애플리케이션에 이상적인 선택입니다.
+* **Python 표준 라이브러리:** `SQLite`는 `sqlite3`라는 이름으로 Python에 기본적으로 내장되어 있습니다. 따라서 Python 개발자들은 별도의 외부 라이브러리를 추가 설치할 필요 없이 간편하게 로컬 데이터베이스 기능을 구현할 수 있습니다.

@@ -133,4 +133,5 @@ output/*
 !/output/sample/*.md
 !/output/sample
 !output/.gitkeep
-
+docs/assets/images/demo/github-pages
+docs/draft
