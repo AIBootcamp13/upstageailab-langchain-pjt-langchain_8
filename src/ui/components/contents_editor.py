@@ -1,6 +1,6 @@
 # src/ui/components/contents_editor.py
 import streamlit as st
-from langchain.memory import ConversationSummaryBufferMemory
+import uuid
 
 from src.agent import BlogContentAgent
 from src.ui.enums import SessionKey
@@ -8,80 +8,62 @@ from src.ui.enums import SessionKey
 class ContentsEditor:
     """
     BlogContentAgent를 사용하여 블로그 초안을 생성하고 수정하는 UI 컴포넌트.
-    이제 대화형 메모리를 지원하여 연속적인 수정 요청을 처리합니다.
+    이제 웹 검색 및 문서 검색이 가능한 Tool-Calling 에이전트를 사용합니다.
     """
     def render(self) -> bool:
         """Streamlit UI를 렌더링하고 콘텐츠 생성 및 수정 로직을 실행합니다."""
         st.subheader("초안 생성 및 퇴고")
 
-        # --- 메모리 및 에이전트 초기화 로직 ---
+        if "session_id" not in st.session_state:
+            st.session_state.session_id = str(uuid.uuid4())
+        
+        session_id = st.session_state.session_id
+
         if SessionKey.BLOG_CREATOR_AGENT not in st.session_state:
-            if SessionKey.RETRIEVER not in st.session_state:
-                st.warning("먼저 파일을 업로드하여 Retriever를 초기화해야 합니다.")
+            # Retriever와 함께 처리된 문서도 세션 상태에서 가져옵니다.
+            if SessionKey.RETRIEVER not in st.session_state or "processed_documents" not in st.session_state:
+                st.warning("먼저 파일을 업로드하여 Retriever와 문서를 초기화해야 합니다.")
                 return False
-
             retriever = st.session_state[SessionKey.RETRIEVER]
-            
-            from src.config import LLM_PROVIDER, LLM_MODEL
-            from langchain_openai import ChatOpenAI
-            from langchain_ollama import ChatOllama
-
-            if LLM_PROVIDER == "openai":
-                llm = ChatOpenAI(model=LLM_MODEL)
-            else:
-                llm = ChatOllama(model=LLM_MODEL)
-            
-            memory = ConversationSummaryBufferMemory(
-                llm=llm, 
-                max_token_limit=1000,
-                return_messages=True,
-                memory_key="history",
-                output_key="output"
-            )
-            st.session_state[SessionKey.MESSAGE_LIST] = memory
-
-            st.session_state[SessionKey.BLOG_CREATOR_AGENT] = BlogContentAgent(retriever, memory)
+            processed_docs = st.session_state["processed_documents"]
+            # 에이전트 초기화 시 처리된 문서를 전달합니다.
+            st.session_state[SessionKey.BLOG_CREATOR_AGENT] = BlogContentAgent(retriever, processed_docs)
 
         agent: BlogContentAgent = st.session_state[SessionKey.BLOG_CREATOR_AGENT]
 
-        # 초안이 없으면 "초안 생성" 버튼을 표시합니다.
         if SessionKey.BLOG_DRAFT not in st.session_state:
             if st.button("블로그 초안 생성하기", type="primary"):
-                with st.spinner(f"초안 생성 중... (LLM: '{agent.llm.model}')"):
-                    draft = agent.generate_draft()
+                # agent.llm.model은 존재하지 않는 속성일 수 있으므로 모델 이름을 가져오는 방식을 수정합니다.
+                model_name = agent.llm.model_name if hasattr(agent.llm, 'model_name') else agent.llm.model
+                with st.spinner(f"초안 생성 중... (LLM: '{model_name}')"):
+                    draft = agent.generate_draft(session_id)
                     st.session_state[SessionKey.BLOG_DRAFT] = draft
-                    agent.memory.save_context(
-                        {"input": "초안을 생성해줘."},
-                        {"output": draft}
-                    )
                 st.rerun()
 
-        # 초안이 있으면 화면에 표시하고 수정 UI를 제공합니다.
         if SessionKey.BLOG_DRAFT in st.session_state:
-            draft = st.session_state[SessionKey.BLOG_DRAFT]
             st.markdown("---")
-            st.markdown(draft)
+            st.markdown(st.session_state[SessionKey.BLOG_DRAFT])
             st.markdown("---")
 
-            if "messages" not in st.session_state:
-                st.session_state.messages = []
+            chat_history = agent.get_session_history(session_id).messages
+            for message in chat_history:
+                if message.type == "human":
+                    with st.chat_message("user"):
+                        st.markdown(message.content)
+                elif message.type == "ai":
+                    with st.chat_message("assistant"):
+                        st.markdown(message.content)
 
-            for message in st.session_state.messages:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
-
-            if prompt := st.chat_input("수정하고 싶은 내용을 입력하세요..."):
-                st.session_state.messages.append({"role": "user", "content": prompt})
+            if prompt := st.chat_input("수정 요청 또는 문서/웹 검색을 입력하세요... (예: 문서에서 OVM의 장점을 요약해줘)"):
                 with st.chat_message("user"):
                     st.markdown(prompt)
 
                 with st.chat_message("assistant"):
-                    # *** FIX: 스피너 메시지를 좀 더 일반적인 내용으로 변경 ***
                     with st.spinner("요청을 처리하는 중..."):
-                        updated_draft = agent.update_blog_post(prompt)
-                        st.session_state[SessionKey.BLOG_DRAFT] = updated_draft
-                        st.markdown(updated_draft)
-                        st.session_state.messages.append({"role": "assistant", "content": updated_draft})
+                        updated_content = agent.update_blog_post(prompt, session_id)
+                        st.session_state[SessionKey.BLOG_DRAFT] = updated_content
+                        st.markdown(updated_content)
+                        st.rerun()
 
         if st.button("발행 단계로 이동"):
             return True

@@ -1,79 +1,101 @@
 # src/agent.py
-from langchain.chains import ConversationChain
-from langchain.memory import ConversationSummaryBufferMemory
+from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langchain.tools.retriever import create_retriever_tool
+from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-
-# 지원하는 모든 LLM 클래스를 import합니다.
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
+# Use the TavilySearch tool exported by langchain_tavily
+from langchain_tavily import TavilySearch
 
-# 중앙 설정 파일에서 필요한 설정값을 가져옵니다.
 from src.config import (
     LLM_PROVIDER,
     LLM_MODEL,
     DRAFT_PROMPT_TEMPLATE,
-    UPDATE_PROMPT_TEMPLATE
+    UPDATE_PROMPT_TEMPLATE,
+    TAVILY_API_KEY,
 )
 
 class BlogContentAgent:
     """
-    검색된 컨텍스트를 바탕으로 블로그 초안을 생성하고,
-    대화형 메모리를 사용하여 사용자의 요청에 따라 수정하는 에이전트 클래스.
+    웹 검색 및 문서 검색 도구를 사용하여 블로그 초안을 생성하고 수정하는 Tool-Calling 에이전트.
     """
-    def __init__(self, retriever, memory: ConversationSummaryBufferMemory):
-        """
-        에이전트를 초기화합니다.
-
-        Args:
-            retriever: 문서를 검색하기 위한 Retriever 객체.
-            memory (ConversationSummaryBufferMemory): 대화 기록을 관리하는 메모리 객체.
-        """
+    def __init__(self, retriever, processed_docs: list[Document]):
         self.retriever = retriever
-        self.memory = memory # 메모리 객체를 인스턴스 변수로 저장합니다.
+        self.processed_docs = processed_docs
+        self.chat_history_store = {}
 
-        # 설정된 LLM 제공자(provider)에 따라 LLM을 초기화합니다.
+        # 1. LLM 초기화
         if LLM_PROVIDER == "openai":
-            self.llm = ChatOpenAI(model=LLM_MODEL)
+            self.llm = ChatOpenAI(model=LLM_MODEL, temperature=0)
         elif LLM_PROVIDER == "ollama":
-            self.llm = ChatOllama(model=LLM_MODEL)
+            self.llm = ChatOllama(model=LLM_MODEL, temperature=0)
         else:
             raise ValueError(f"Unsupported LLM provider: {LLM_PROVIDER}")
 
-        # 초안 생성을 위한 체인 설정
+        # 2. 초안 생성을 위한 체인
         self.draft_prompt_template = ChatPromptTemplate.from_template(DRAFT_PROMPT_TEMPLATE)
         self.output_parser = StrOutputParser()
         self.draft_chain = self.draft_prompt_template | self.llm | self.output_parser
 
-        # 블로그 포스트 수정을 위한 대화형 체인 설정
-        self.update_prompt_template = PromptTemplate.from_template(UPDATE_PROMPT_TEMPLATE)
+        # 3. Tool-Calling 에이전트 설정
+        # 3-1. 도구 생성 (Retriever Tool 추가)
+        retriever_tool = create_retriever_tool(
+            self.retriever,
+            "document_search",
+            "업로드된 PDF 문서에서 정보를 검색하고 반환합니다. 문서 내용에 대한 질문에 답할 때 사용하세요."
+        )
+        # TavilySearch accepts tavily_api_key as a kwarg and will construct its API wrapper
+        web_search_tool = TavilySearch(max_results=3, tavily_api_key=TAVILY_API_KEY)
+        tools = [retriever_tool, web_search_tool]
 
-        # ConversationChain을 초기화합니다.
-        # *** FIX: memory 객체와 일치하도록 output_key를 명시적으로 설정합니다. ***
-        self.update_chain = ConversationChain(
-            llm=self.llm,
-            memory=self.memory,
-            prompt=self.update_prompt_template,
-            verbose=True, # 디버깅을 위해 체인 실행 과정을 출력합니다.
-            output_key="output" # 이 부분이 핵심 수정 사항입니다.
+        # 3-2. 에이전트 프롬프트
+        self.update_prompt_template = ChatPromptTemplate.from_messages([
+            ("system", UPDATE_PROMPT_TEMPLATE),
+            MessagesPlaceholder(variable_name="chat_history"),
+            ("human", "{input}"),
+            MessagesPlaceholder(variable_name="agent_scratchpad"),
+        ])
+
+        # 3-3. 에이전트 생성
+        agent = create_tool_calling_agent(self.llm, tools, self.update_prompt_template)
+        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+        # 3-4. 메모리와 함께 실행 가능한 체인으로 래핑
+        self.agent_with_chat_history = RunnableWithMessageHistory(
+            agent_executor,
+            self.get_session_history,
+            input_messages_key="input",
+            history_messages_key="chat_history",
         )
 
-    def generate_draft(self) -> str:
-        """검색된 문서를 바탕으로 블로그 포스트의 초안을 생성합니다."""
-        return self.draft_chain.invoke({"content": self.retriever | self.format_docs})
+    def get_session_history(self, session_id: str):
+        if session_id not in self.chat_history_store:
+            self.chat_history_store[session_id] = ChatMessageHistory()
+        return self.chat_history_store[session_id]
 
-    def update_blog_post(self, user_request: str) -> str:
+    def generate_draft(self, session_id: str) -> str:
         """
-        사용자의 수정 요청에 따라 기존 블로그 포스트를 업데이트합니다.
-        이제 ConversationChain을 사용합니다.
+        제공된 전체 문서를 바탕으로 블로그 포스트의 초안을 생성합니다.
         """
-        # *** FIX: .predict() 대신 .invoke()를 사용하여 전체 출력 딕셔너리를 받고,
-        #          명시적으로 'output' 키를 사용하여 결과를 추출합니다. ***
-        result = self.update_chain.invoke({"input": user_request})
+        # Retriever를 호출하는 대신, 처리된 문서 전체를 컨텍스트로 사용합니다.
+        content = self.format_docs(self.processed_docs)
+        draft = self.draft_chain.invoke({"content": content})
+        
+        # 생성된 초안을 대화의 시작점으로 메모리에 추가
+        history = self.get_session_history(session_id)
+        history.add_user_message("제공된 문서를 바탕으로 블로그 초안을 생성해줘.")
+        history.add_ai_message(draft)
+        return draft
+
+    def update_blog_post(self, user_request: str, session_id: str) -> str:
+        config = {"configurable": {"session_id": session_id}}
+        result = self.agent_with_chat_history.invoke({"input": user_request}, config=config)
         return result["output"]
 
     @staticmethod
     def format_docs(documents: list[Document]) -> str:
-        """Document 객체 리스트를 하나의 긴 문자열로 결합합니다."""
         return "\n\n".join(doc.page_content for doc in documents)

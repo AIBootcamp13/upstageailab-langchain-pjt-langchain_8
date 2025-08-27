@@ -59,6 +59,7 @@ ACTIVE_PROFILE = CONFIG["profiles"][ENV_PROFILE]
 # --- API 키 ---
 OPENAI_API_KEY = get_env_var("OPENAI_API_KEY")
 UPSTAGE_API_KEY = get_env_var("UPSTAGE_API_KEY")
+TAVILY_API_KEY = get_env_var("TAVILY_API_KEY")
 
 # --- 디렉토리 경로 ---
 LOG_ROOT_DIR = ROOT_DIR / "logs"
