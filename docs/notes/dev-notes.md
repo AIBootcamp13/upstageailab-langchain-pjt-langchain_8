@@ -28,3 +28,30 @@ sudo apt-get update && sudo apt-get install -y poppler-utils
 ```bash
 sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-kor
 ```
+
+
+---
+
+# Debug streamlit
+pkill -f 'streamlit run' || true; sleep 1; poetry run streamlit run src/app.py --logger.level=debug
+
+# Debug and output log file
+pkill -f 'streamlit run' || true; sleep 1; poetry run streamlit run src/app.py --logger.level=debug > /tmp/streamlit.log 2>&1 & echo $! > /tmp/streamlit.pid; sleep 2; tail -n 200 /tmp/streamlit.log
+
+---
+
+You've asked a great question! It's a sharp observation.
+
+No, the logic was not removed from the `generate_draft` method. It was intentionally **refactored** for better code organization.
+
+Here's a breakdown of what changed:
+
+* **Before**: The `chain` used for generating the draft was created inside the `generate_draft` method every time it was called.
+* **Now**: The chain is created just once as `self.draft_chain` when the `BlogContentAgent` is first initialized in the `__init__` method. The `generate_draft` method now simply uses this pre-built chain.
+
+This is a common and good practice because it makes the code more efficient by not rebuilding the chain on every call.
+
+The core logic, `self.retriever | self.format_docs`, which retrieves documents and formats them before sending them to the language model, is still intact and works exactly as it did before.
+
+
+----
