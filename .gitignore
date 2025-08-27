@@ -121,7 +121,7 @@ data
 
 # dev
 .gitattributes
-docs/assets/
+
 docs/draft/
 docs/streamlit_run.md
 notebooks/yuiyeong/01_data_ingestion_test.ipynb
@@ -133,3 +133,5 @@ requirements.full.txt
 requirements.trimmed.txt
 requirements.txt
 poetry.toml
+READEME.md
+!docs/assets/images/pdf-parser
