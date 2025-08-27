@@ -1,12 +1,56 @@
 # **프로젝트 설정 (config.yaml) 사용 가이드 (Poetry)**
 
-이 문서는 `config.yaml` 파일을 사용하여 프로젝트의 모든 설정을 관리하는 방법을 안내합니다. 이 파일을 통해 실행 환경, 데이터 처리 방식, 검색 옵션을 손쉽게 변경할 수 있습니다.
+이 문서는 `config.yaml` 파일을 통해 프로젝트의 실행 환경, 데이터 처리 방식, 검색 옵션 등 주요 설정을 손쉽게 관리하는 방법을 안내합니다. 
+ 
+아래 가이드를 따라 프로젝트를 처음 시작하거나 환경을 변경할 때 필요한 모든 정보를 확인할 수 있습니다.
 
-### **시작하기 전에: 의존성 설치**
+## **목차**
 
-이 프로젝트는 `Poetry`를 사용하여 패키지를 관리합니다. 프로젝트를 처음 설정하거나 새로운 동료가 참여할 때, 필요한 모든 라이브러리는 `pyproject.toml` 파일에 이미 정의되어 있습니다.
+- [시작하기 전에: 의존성 설치](#시작하기-전에-의존성-설치)
+- [필수 설치 라이브러리](#필수-설치-라이브러리)
+    - [Poppler 🖼️](#poppler-)
+    - [Tesseract OCR 📖](#tesseract-ocr-)
+- [macOS 사용자 참고: pysqlite3-binary 설치 문제](#macos-사용자-참고-pysqlite3-binary-설치-문제)
+- [1. 실행 환경 설정 (환경 프로필) ⚙️](#1-실행-환경-설정-환경-프로필-️)
+    - [프로필 선택 방법](#프로필-선택-방법)
+    - [Ollama 로컬 모델 실행 방법 (high_gpu 프로필 사용 시)](#ollama-로컬-모델-실행-방법-high_gpu-프로필-사용-시)
+    - [export 명령어는 언제 사용하나요?](#export-명령어는-언제-사용하나요)
+- [2. 데이터 수집 설정 (ingestion) 📄](#2-데이터-수집-설정-ingestion-)
+    - [PDF 파서 선택 (parser)](#pdf-파서-선택-parser)
+    - [텍스트 분할 (text_splitter)](#텍스트-분할-text_splitter)
+- [3. 벡터 저장소 설정 (vector_store) 🔍](#3-벡터-저장소-설정-vector_store-)
+    - [검색 타입 (search_type)](#검색-타입-search_type)
+    - [검색 인자 (search_kwargs)](#검색-인자-search_kwargs)
 
-따라서, 아래 명령어 단 하나만 실행하여 모든 의존성을 한 번에 설치하세요.
+---
+
+## **시작하기 전에: 의존성 설치**
+
+가장 먼저, 프로젝트 실행에 필요한 라이브러리들을 설치해야 합니다.
+
+이 프로젝트는 패키지 관리를 위해 `Poetry`를 사용합니다. 프로젝트를 처음 설정하거나 새로운 동료가 참여할 때, 필요한 모든 라이브러리는 `pyproject.toml` 파일에 정의되어 있으므로 아래 명령어 한 줄로 모든 의존성을 설치할 수 있습니다.
+
+## **필수 설치 라이브러리**
+
+이 프로젝트는 PDF 문서를 처리하기 위해 외부 라이브러리를 사용하며, 특히 고급 파싱(parsing) 전략을 사용할 때 반드시 필요합니다.
+
+### **Poppler 🖼️**
+**Poppler**는 PDF 렌더링 라이브러리입니다. `"hi_res"` 파싱 전략을 사용할 때 PDF 페이지를 이미지로 변환하여 분석하기 위해 필요합니다.
+
+**설치 방법 (Debian/Ubuntu):**
+```bash
+sudo apt-get update && sudo apt-get install -y poppler-utils
+```
+
+---
+
+### **Tesseract OCR 📖**
+
+**Tesseract**는 광학 문자 인식(OCR) 엔진입니다. `"hi_res"` 및 `"ocr_only"` 전략에서 이미지나 스캔된 문서로부터 텍스트를 추출하는 데 사용됩니다. 아래 명령어에는 한국어 언어팩(`tesseract-ocr-kor`)이 포함되어 있습니다.
+
+**설치 방법 (Debian/Ubuntu):**
+```bash
+sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-kor
 
 ```bash
 poetry install
@@ -67,9 +111,10 @@ high_gpu 프로필을 사용하려면 먼저 Ollama 서버를 실행하고 원�
    ```
 
 2. 모델 다운로드:  
-   다른 터미널을 열고 `config.yaml`에 지정된 `gpt-oss:20b` 모델을 다운로드합니다.  
+   다른 터미널을 열고 `config.yaml`에 지정된 `gpt-oss:20b` 모델을 다운로드합니다.
+
    ```bash
-   ollama pull gpt-oss:20b
+    ollama pull gpt-oss:20b
    ```
 
 3. 모델 실행 확인 (선택 사항):  
