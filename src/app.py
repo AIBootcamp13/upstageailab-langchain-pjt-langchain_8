@@ -23,8 +23,8 @@ class BlogCreatorApp:
 
     def __init__(self):
         st.set_page_config(
-            page_title="Blog Creator",
-            page_icon="📝",
+            page_title="블로그 글 생성기",
+            page_icon="✏️",
             layout="wide",
         )
 

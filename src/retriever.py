@@ -1,77 +1,26 @@
-# from langchain.retrievers import ContextualCompressionRetriever, EnsembleRetriever, MultiQueryRetriever
-# from langchain.retrievers.document_compressors import CohereRerank
-# from langchain.schema import Document
-# from langchain_community.retrievers import BM25Retriever
-# from langchain_core.language_models import BaseLanguageModel
-# from langchain_core.retrievers import BaseRetriever
-
+# src/retriever.py
 from src.vector_store import VectorStore
-
-
-class RetrieverConfig:
-    """Retriever 설정"""
-
-    def __init__(self, retriever_type: str = "simple", search_kwargs: dict | None = None, **kwargs):
-        self.retriever_type = retriever_type
-        self.search_kwargs = search_kwargs or {"k": 5}
-        self.kwargs = kwargs
-
+from src.config import SEARCH_KWARGS, SEARCH_TYPE
 
 class RetrieverFactory:
-    """다양한 Retriever 생성"""
-
+    """
+    설정 파일(config.yaml)에 정의된 값을 기반으로 Retriever를 생성하는 팩토리 클래스.
+    """
     @staticmethod
-    def create_simple_retriever(vector_store: VectorStore, config: RetrieverConfig):
-        """기본 벡터 검색"""
-        return vector_store.as_retriever(search_type="mmr", search_kwargs=config.search_kwargs)
+    def create(vector_store: VectorStore):
+        """
+        주어진 VectorStore와 중앙 설정 값을 사용하여 Retriever를 생성합니다.
 
-    #
-    # @staticmethod
-    # def create_hybrid_retriever(
-    #         vector_store: VectorStore,
-    #         documents: list[Document],
-    #         config: RetrieverConfig
-    # ):
-    #     """하이브리드 검색 (BM25 + Vector)"""
-    #     # BM25 retriever
-    #     bm25_retriever = BM25Retriever.from_documents(documents)
-    #     bm25_retriever.k = config.search_kwargs.get("k", 5)
-    #
-    #     # Vector retriever
-    #     vector_retriever = vector_store.as_retriever(
-    #         search_kwargs={"k": config.search_kwargs.get("k", 5)}
-    #     )
-    #
-    #     # Ensemble
-    #     return EnsembleRetriever(
-    #         retrievers=[bm25_retriever, vector_retriever],
-    #         weights=config.kwargs.get("weights", [0.5, 0.5])
-    #     )
-    #
-    # @staticmethod
-    # def create_reranking_retriever(
-    #         base_retriever: BaseRetriever,
-    #         config: RetrieverConfig
-    # ):
-    #     """Cohere Reranking 적용"""
-    #     compressor = CohereRerank(
-    #         model="rerank-multilingual-v3.0",
-    #         top_n=config.search_kwargs.get("k", 5)
-    #     )
-    #
-    #     return ContextualCompressionRetriever(
-    #         base_compressor=compressor,
-    #         base_retriever=base_retriever
-    #     )
-    #
-    # @staticmethod
-    # def create_multi_query_retriever(vector_store: VectorStore, llm: BaseLanguageModel, config: RetrieverConfig):
-    #     """Multi-Query Retriever"""
-    #     base_retriever = vector_store.as_retriever(
-    #         search_kwargs=config.search_kwargs
-    #     )
-    #
-    #     return MultiQueryRetriever.from_llm(
-    #         retriever=base_retriever,
-    #         llm=llm
-    #     )
+        Args:
+            vector_store (VectorStore): Retriever를 생성할 기반 VectorStore 객체.
+
+        Returns:
+            langchain_core.retrievers.BaseRetriever: 설정된 Retriever 객체.
+        """
+        # config.py에서 직접 값을 가져오는 대신, vector_store.as_retriever()가
+        # 내부적으로 설정 값을 사용하도록 이미 수정되었습니다.
+        # 이 RetrieverFactory는 이제 더 간단한 인터페이스를 제공하는 역할만 합니다.
+        return vector_store.as_retriever(
+            search_type=SEARCH_TYPE,
+            search_kwargs=SEARCH_KWARGS,
+        )

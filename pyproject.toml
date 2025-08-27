@@ -20,7 +20,15 @@ dependencies = [
     "langgraph (>=0.6.5,<0.7.0)",
     "langchain-chroma (>=0.2.5,<0.3.0)",
     "chromadb (>=1.0.20,<2.0.0)",
-    "pygithub (>=2.7.0,<3.0.0)"
+    "pygithub (>=2.7.0,<3.0.0)",
+    "pysqlite3-binary (>=0.5.4,<0.6.0)",
+    "pymupdf (>=1.26.4,<2.0.0)",
+    "pyyaml (>=6.0.2,<7.0.0)",
+    "unstructured[pdf]",
+    "unstructured[elements]",
+    "langchain-unstructured",
+    "paddleocr",
+    "paddlepaddle"
 ]
 
 [project.optional-dependencies]
@@ -34,6 +42,7 @@ dev = [
 
 [tool.poetry]
 package-mode = false
+packages = [ { include = "src" } ]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
