@@ -30,9 +30,14 @@ class ContentsEditor:
             self._generate_draft_with_progress(agent)
             return False
 
+        # Use the requested column layout with a small spacer
         draft_col, _, chat_col = st.columns([52, 1, 46])
-        self._render_draft_preview(draft_col)
-        self._render_chat(chat_col, agent)
+
+        with draft_col:
+            self._render_draft_preview()
+
+        with chat_col:
+            self._render_chat(agent)
 
         if st.button("발행 단계로 이동"):
             st.session_state[SessionKey.BLOG_POST] = st.session_state.draft
@@ -61,21 +66,26 @@ class ContentsEditor:
                 status.update(label="✅ 블로그 포스트 초안 생성 완료!", state="complete", expanded=False)
             st.rerun()
 
-    def _render_draft_preview(self, draft_column):
-        with draft_column:
+    def _render_draft_preview(self):
+        """Renders the draft preview and markdown tabs inside a single aligned container."""
+        # Wrap the entire panel in a single container for alignment.
+        with st.container(height=750, border=True):
             st.markdown("##### **블로그 초안**")
             preview_tab, markdown_tab = st.tabs(["🖼️ Preview", "👨‍💻 Markdown"])
+            
             with preview_tab:
-                with st.container(height=700, border=True):
-                    st.markdown(st.session_state.get("draft", ""))
+                st.markdown(st.session_state.get("draft", ""))
+            
             with markdown_tab:
-                with st.container(height=700, border=True):
-                    st.code(st.session_state.get("draft", ""), language="markdown")
+                st.code(st.session_state.get("draft", ""), language="markdown")
 
-    def _render_chat(self, chat_column, agent: BlogContentAgent):
-        with chat_column:
+    def _render_chat(self, agent: BlogContentAgent):
+        """Renders the chat panel inside a single aligned container."""
+        # Wrap the entire panel in a single container for alignment.
+        with st.container(height=750, border=True):
             st.markdown("##### **수정 및 대화**")
-            chat_container = st.container(height=625, border=True)
+            
+            chat_container = st.container(height=625)
             with chat_container:
                 # Use the agent's helper to get the history
                 for msg in agent.get_session_history().messages:
@@ -89,7 +99,7 @@ class ContentsEditor:
     def _handle_user_prompt(self, agent: BlogContentAgent, user_request: str):
         with st.spinner("⏳ 수정 사항 반영 중..."):
             current_draft = st.session_state.get("draft", "")
-            response_data = agent.update_blog_post(user_request, current_draft)
+            response_data = agent.update__blog_post(user_request, current_draft)
             
             # The agent's response now reliably contains both keys.
             chat_response = response_data.get("chat_response")
@@ -99,4 +109,4 @@ class ContentsEditor:
             st.session_state.draft = updated_draft
             
             # The agent already saved the chat response to memory, so we just need to rerun.
-        st.rerun()
+            st.rerun()

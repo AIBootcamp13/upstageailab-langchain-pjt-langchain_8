@@ -68,7 +68,12 @@ class BlogContentAgent:
 
         # Robust JSON parsing
         try:
-            response_json = json.loads(response_str)
+            json_start = response_str.find('{')
+            json_end = response_str.rfind('}') + 1
+            clean_json_str = response_str[json_start:json_end]
+      
+            response_json = json.loads(clean_json_str) # Parse the cleaned string
+            
             # Ensure the response has the expected structure
             if "chat_response" in response_json and "updated_draft" in response_json:
                 self.memory.save_context({"input": user_request}, {"output": response_json["chat_response"]})
