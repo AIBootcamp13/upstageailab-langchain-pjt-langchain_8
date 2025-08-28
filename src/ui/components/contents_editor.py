@@ -1,38 +1,25 @@
 from dataclasses import dataclass
 
 import streamlit as st
+import uuid
+import json
+from dataclasses import dataclass
 
 from src.agent import BlogContentAgent
 from src.ui.enums import SessionKey
 
-
 @dataclass(frozen=True)
 class Message:
+    """A class to represent a chat message, matching the sandbox UI style."""
     ROLE_USER = "user"
     ROLE_ASSISTANT = "assistant"
 
     role: str
     contents: str
 
-    @classmethod
-    def create_as_user(cls, contents: str) -> "Message":
-        return cls(
-            role=cls.ROLE_USER,
-            contents=contents,
-        )
-
-    @classmethod
-    def create_as_assistant(cls, contents: str) -> "Message":
-        return cls(
-            role=cls.ROLE_ASSISTANT,
-            contents=contents,
-        )
-
-
 class ContentsEditor:
     """
-    BlogContentAgent를 사용하여 블로그 초안을 생성하고 수정하는 UI 컴포넌트.
-    Agent는 이제 중앙 설정에 따라 동적으로 LLM을 로드합니다.
+    Renders the main editor UI, combining the sandbox UI style with the feature/memory-search agent.
     """
 
     def __init__(self):
@@ -70,28 +57,28 @@ class ContentsEditor:
     def add_message(self, message: Message):
         self.message_list.append(message)
 
-    def add_user_message(self, content: str):
-        self.add_message(Message.create_as_user(content))
-
-    def add_assistant_message(self, content: str):
-        self.add_message(Message.create_as_assistant(content))
-
     def finalize_draft(self):
         st.session_state[SessionKey.BLOG_POST] = self.draft
 
     def render(self) -> bool:
-        """Streamlit UI를 렌더링하고 콘텐츠 생성 및 수정 로직을 실행합니다."""
+        """Renders the main editor UI."""
         st.subheader("초안 생성 및 퇴고")
 
-        self.agent = self._initialize_agent()
+        agent = self._initialize_agent()
+        session_id = st.session_state.session_id
 
-        self._generate_draft_with_progress()
+        if SessionKey.BLOG_DRAFT not in st.session_state:
+            self._generate_draft_with_progress(agent, session_id)
+            return False
 
+        # Use the requested column layout with a small spacer
         draft_col, _, chat_col = st.columns([52, 1, 46])
 
-        self._render_draft_preview(draft_col)
+        with draft_col:
+            self._render_draft_preview()
 
-        self._render_chat(chat_col)
+        with chat_col:
+            self._render_chat(agent, session_id)
 
         if st.button("발행 단계로 이동"):
             self.finalize_draft()
@@ -99,52 +86,85 @@ class ContentsEditor:
         return False
 
     def _initialize_agent(self) -> BlogContentAgent:
-        if SessionKey.RETRIEVER not in st.session_state:
-            raise RuntimeError("먼저 파일을 업로드하여 Retriever를 초기화해야 합니다.")
+        """Initializes the BlogContentAgent if not already in the session."""
+        if "session_id" not in st.session_state:
+            st.session_state.session_id = str(uuid.uuid4())
 
         if SessionKey.BLOG_CREATOR_AGENT not in st.session_state:
+            if SessionKey.RETRIEVER not in st.session_state or "processed_documents" not in st.session_state:
+                st.warning("먼저 파일을 업로드하여 Retriever와 문서를 초기화해야 합니다.")
+                st.stop()
             retriever = st.session_state[SessionKey.RETRIEVER]
-            st.session_state[SessionKey.BLOG_CREATOR_AGENT] = BlogContentAgent(retriever)
-
+            processed_docs = st.session_state["processed_documents"]
+            st.session_state[SessionKey.BLOG_CREATOR_AGENT] = BlogContentAgent(retriever, processed_docs)
+        
         return st.session_state[SessionKey.BLOG_CREATOR_AGENT]
 
-    def _generate_draft_with_progress(self):
-        """초안이 없으면 초안을 생성하고, 있다면 그 값을 반환"""
-        if self.draft:
-            return
-
-        with st.status(f"💬 초안 생성 중... (LLM: '{self.agent.llm.model_name}')", expanded=True) as status:
-            self.draft = self.agent.generate_draft()
-            status.update(label="✅  블로그 포스트 초안 생성 완료!", state="complete", expanded=False)
-
-    def _render_draft_preview(self, draft_column):
-        with draft_column:
-            preview_tab, markdown_tab = st.tabs(["🖼️ Preview", "👨‍💻 Markdown"])
-            with preview_tab:  # noqa: SIM117
-                with st.container(height=720, width="stretch"):
-                    st.markdown(self.draft)
-            with markdown_tab:  # noqa: SIM117
-                with st.container(height=720, width="stretch"):
-                    st.code(self.draft, language="markdown")
-
-    def _render_chat(self, chat_column):
-        with chat_column:
-            chat_container = st.container(height=720, width="stretch")
-            with chat_container:
-                for message in self.message_list:
-                    with st.chat_message(message.role):
-                        st.write(message.contents)
-            self.user_request = st.chat_input("수정하고 싶은 내용을 입력하세요.")
-            if self.user_request:
-                with chat_container:  # noqa: SIM117
-                    with st.chat_message(Message.ROLE_USER):
-                        st.write(self.user_request)
-                self.add_user_message(self.user_request)
-
-        if self.user_request:
-            with st.spinner("⏳ 수정 사항 반영 중..."):
-                updated_draft = self.agent.update_blog_post(self.draft, self.user_request)
-
-            self.draft = updated_draft
-            self.add_assistant_message(f"'{self.user_request}' 를 반영했습니다.\n추가 요청이 있으신가요?")
+    def _generate_draft_with_progress(self, agent: BlogContentAgent, session_id: str):
+        """Shows a button to generate a draft and displays its progress using st.status."""
+        if st.button("블로그 초안 생성하기", type="primary"):
+            model_name = agent.llm.model_name if hasattr(agent.llm, 'model_name') else agent.llm.model
+            with st.status(f"💬 초안 생성 중... (LLM: '{model_name}')", expanded=True) as status:
+                draft = agent.generate_draft(session_id)
+                st.session_state[SessionKey.BLOG_DRAFT] = draft
+                status.update(label="✅ 블로그 포스트 초안 생성 완료!", state="complete", expanded=False)
             st.rerun()
+
+    def _render_draft_preview(self):
+        """Renders the draft preview and markdown tabs."""
+        # *** FIX: Wrap the entire panel in a single container for alignment. ***
+        with st.container(height=750, border=True):
+            st.markdown("##### **블로그 초안**")
+            preview_tab, markdown_tab = st.tabs(["🖼️ Preview", "👨‍💻 Markdown"])
+            
+            with preview_tab:
+                st.markdown(st.session_state.get(SessionKey.BLOG_DRAFT, ""))
+            
+            with markdown_tab:
+                st.code(st.session_state.get(SessionKey.BLOG_DRAFT, ""), language="markdown")
+
+    def _render_chat(self, agent: BlogContentAgent, session_id: str):
+        """Renders the chat panel, adapting the agent's history to the Message dataclass."""
+        # *** FIX: Wrap the entire panel in a single container for alignment. ***
+        with st.container(height=750, border=True):
+            st.markdown("##### **수정 및 대화**")
+            
+            chat_container = st.container(height=625)
+            with chat_container:
+                chat_history = agent.get_session_history(session_id).messages
+                for msg in chat_history:
+                    # Adapt LangChain's message object to the local Message dataclass
+                    role = Message.ROLE_USER if msg.type == "human" else Message.ROLE_ASSISTANT
+                    message = Message(role=role, contents=msg.content)
+                    with st.chat_message(message.role):
+                        content_to_display = self._parse_ai_message(message)
+                        st.markdown(content_to_display)
+
+            if user_request := st.chat_input("수정하고 싶은 내용을 입력하세요..."):
+                self._handle_user_prompt(agent, user_request, session_id)
+
+    def _parse_ai_message(self, message: Message) -> str:
+        """Parses the AI's message content to decide what to display."""
+        if message.role == Message.ROLE_USER:
+            return message.contents
+        try:
+            data = json.loads(message.contents)
+            if data.get("type") == "draft":
+                return "초안이 수정되었습니다. 왼쪽 패널에서 확인 후 추가 요청을 해주세요."
+            return data.get("content", message.contents)
+        except (json.JSONDecodeError, TypeError):
+            return message.contents
+
+    def _handle_user_prompt(self, agent: BlogContentAgent, prompt: str, session_id: str):
+        """Handles user input by calling the agent and updating the state."""
+        with st.spinner("⏳ 수정 사항 반영 중..."):
+            response_data = agent.update_blog_post(prompt, session_id)
+            
+            if response_data.get("type") == "draft":
+                st.session_state[SessionKey.BLOG_DRAFT] = response_data.get("content")
+        
+        st.rerun()
+
+    def finalize_draft(self):
+        """Saves the final draft to the session state for the publishing stage."""
+        st.session_state[SessionKey.BLOG_POST] = st.session_state.get(SessionKey.BLOG_DRAFT)

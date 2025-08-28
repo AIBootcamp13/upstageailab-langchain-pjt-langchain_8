@@ -120,18 +120,41 @@ data
 
 
 # dev
-.gitattributes
+# Project-specific ignores
 
+# Exclude documentation drafts and notes
 docs/draft/
+docs/notes/
+
+# Exclude specific documentation and notebook files
 docs/streamlit_run.md
 notebooks/yuiyeong/01_data_ingestion_test.ipynb
+
+# Exclude output and vector store directories
 output/
+vector_store/
+
+# Exclude scripts
 scripts/comment_out_conda_in_bashrc.sh
 scripts/run_streamlit.sh
-vector_store/
+
+# Exclude requirements and config files
 requirements.full.txt
 requirements.trimmed.txt
 requirements.txt
 poetry.toml
+poetry.lock
+
+# Exclude other files
+.gitattributes
 READEME.md
+data
+
+# Exclude folders
+logs/
+log/
+
+# Do not ignore these (force include)
 !docs/assets/images/pdf-parser
+!docs/feature-summary
+
