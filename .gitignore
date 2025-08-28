@@ -1,12 +1,14 @@
-# Byte-compiled / optimized / DLL files
+############################################
+# General Python
+############################################
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
 
-# Distribution / packaging
+############################################
+# Build / Packaging
+############################################
 .Python
 build/
 develop-eggs/
@@ -23,16 +25,23 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+target/
 
+############################################
 # PyInstaller
+############################################
 *.manifest
 *.spec
 
+############################################
 # Installer logs
+############################################
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+############################################
+# Testing / Coverage
+############################################
 htmlcov/
 .tox/
 .coverage
@@ -43,40 +52,32 @@ coverage.xml
 *.cover
 .hypothesis/
 
+############################################
 # Translations
+############################################
 *.mo
 *.pot
 
-# Django stuff:
+############################################
+# Framework-specific
+############################################
+# Django
 *.log
 local_settings.py
 
-# Flask stuff:
+# Flask
 instance/
 .webassets-cache
 
-# Scrapy stuff:
+# Scrapy
 .scrapy
 
-# Sphinx documentation
+# Sphinx
 docs/_build/
 
-# PyBuilder
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# celery beat schedule file
-celerybeat-schedule
-
-# SageMath parsed files
-*.sage.py
-
+############################################
 # Environments
+############################################
 .env
 .venv
 env/
@@ -84,54 +85,62 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.python-version
 
-# Spyder project settings
+############################################
+# Jupyter
+############################################
+.ipynb_checkpoints
+
+############################################
+# Tools / IDEs
+############################################
+.vscode/
+.idea/
+.ropeproject
 .spyderproject
 .spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
 .mypy_cache/
-
-# VS Code settings
-.vscode/
-
-# PyCharm settings
-.idea/
-
-# OS specific
-.DS_Store
-Thumbs.db
-
-# Ruff cache
 .ruff_cache/
 
-# etc
+############################################
+# OS files
+############################################
+.DS_Store
+Thumbs.db
 .viminfo
+
+############################################
+# Project-specific
+############################################
+# Logs and outputs
 log/
 logs/
-poetry.lock
-data
-
-
-# dev
-.gitattributes
-
-docs/draft/
-docs/streamlit_run.md
-notebooks/yuiyeong/01_data_ingestion_test.ipynb
 output/
-scripts/comment_out_conda_in_bashrc.sh
-scripts/run_streamlit.sh
+
+# Data and vector stores
+data/
 vector_store/
+
+# Poetry and requirements (kept untracked here)
+poetry.lock
+poetry.toml
 requirements.full.txt
 requirements.trimmed.txt
 requirements.txt
-poetry.toml
-READEME.md
-!docs/assets/images/pdf-parser
+
+# Dev-only local files
+.gitattributes
+
+# Documentation artifacts
+docs/draft/
+docs/notes/
+docs/streamlit_run.md
+!docs/assets/
+
+# Scripts to keep local-only
+scripts/comment_out_conda_in_bashrc.sh
+scripts/run_streamlit.sh
+
+# Project-specific notebooks to ignore
+notebooks/yuiyeong/01_data_ingestion_test.ipynb
