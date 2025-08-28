@@ -6,7 +6,7 @@ from src.ui.components.contents_editor import ContentsEditor
 from src.ui.components.file_uploader import FileUploader
 from src.ui.components.github_auth import GithubAuthenticator
 from src.ui.components.publisher import Publisher
-from ui.enums import SessionKey
+from src.ui.enums import SessionKey
 
 
 class AppStage(str, Enum):

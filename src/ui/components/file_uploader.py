@@ -38,6 +38,8 @@ class FileUploader:
                     preprocessor = DocumentPreprocessor(file_path)
                     documents = preprocessor.process()
                     st.info(f"문서 전처리 완료: {len(documents)}개 청크 생성")
+                    # 이후 단계에서 사용할 수 있도록 세션에 저장합니다.
+                    st.session_state["processed_documents"] = documents
 
                     # 2. 벡터 스토어에 저장 (설정에 따라 임베딩 모델 자동 선택)
                     vector_store = VectorStore()

@@ -1,13 +1,14 @@
+# src/agent.py
+import json
+import time
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.memory import ConversationBufferWindowMemory
 from langchain_ollama import ChatOllama
-from langchain.chains import ConversationChain
-from langchain.memory import ConversationSummaryBufferMemory
-
 from langchain_openai import ChatOpenAI
 
+from src.logger import get_logger
 from src.config import (
     LLM_PROVIDER,
     LLM_MODEL,
@@ -15,160 +16,76 @@ from src.config import (
     UPDATE_PROMPT_TEMPLATE,
 )
 
-
 class BlogContentAgent:
     """
-    검색된 컨텍스트를 바탕으로 블로그 초안을 생성하고,
-    대화형 메모리를 사용하여 사용자의 요청에 따라 수정하는 에이전트 클래스.
+    대화형 메모리를 사용하여 블로그 초안을 생성하고 수정하는 에이전트 클래스.
     """
-
-    def __init__(
-        self,
-        retriever,
-        memory: ConversationSummaryBufferMemory | None = None,
-        processed_docs: list[Document] | None = None,
-    ):
+    def __init__(self, retriever, processed_docs: list[Document]):
         self.retriever = retriever
-        self.memory = memory
         self.processed_docs = processed_docs
+        self.logger = get_logger("src.agent")
 
-        # initialize LLM
         if LLM_PROVIDER == "openai":
             self.llm = ChatOpenAI(model=LLM_MODEL)
-        elif LLM_PROVIDER == "ollama":
-            self.llm = ChatOllama(model=LLM_MODEL)
         else:
-            raise ValueError(f"Unsupported LLM provider: {LLM_PROVIDER}")
+            self.llm = ChatOllama(model=LLM_MODEL)
 
-        # draft generation chain
+        # Draft generation chain
         self.draft_prompt_template = ChatPromptTemplate.from_template(DRAFT_PROMPT_TEMPLATE)
         self.output_parser = StrOutputParser()
         self.draft_chain = self.draft_prompt_template | self.llm | self.output_parser
 
-        # update chain setup (use ConversationChain when memory is provided)
-        self.update_prompt_template = PromptTemplate.from_template(UPDATE_PROMPT_TEMPLATE)
-        if self.memory is not None:
-            # ensure output_key matches expectation of update prompt handling
-            self.update_chain = ConversationChain(
-                llm=self.llm,
-                memory=self.memory,
-                prompt=self.update_prompt_template,
-                verbose=True,
-                output_key="output",
-            )
-        else:
-            self.update_chain = None
+        # Simplified memory and update chain
+        self.memory = ConversationBufferWindowMemory(k=10, memory_key="history", return_messages=True)
+        self.update_prompt_template = ChatPromptTemplate.from_messages([
+            ("system", UPDATE_PROMPT_TEMPLATE),
+            MessagesPlaceholder(variable_name="history"),
+            ("human", "[USER REQUEST]\n{input}\n\n[CURRENT DRAFT]\n{draft}"),
+        ])
+        self.update_chain = self.update_prompt_template | self.llm | self.output_parser
 
     def generate_draft(self) -> str:
-        """Generate a blog draft using processed_docs (if provided) or retriever results."""
-        docs = None
-        if getattr(self, "processed_docs", None):
-            docs = self.processed_docs
-
-        if docs is None and self.retriever is not None:
-            try:
-                if hasattr(self.retriever, "get_relevant_documents"):
-                    try:
-                        docs = self.retriever.get_relevant_documents()
-                    except TypeError:
-                        docs = self.retriever.get_relevant_documents("")
-                elif hasattr(self.retriever, "get_documents"):
-                    docs = self.retriever.get_documents()
-                elif hasattr(self.retriever, "retrieve"):
-                    try:
-                        docs = self.retriever.retrieve()
-                    except TypeError:
-                        docs = self.retriever.retrieve("")
-            except Exception:
-                docs = None
-
-        if docs is None:
-            # fallback: attempt to run a runnable pipeline if retriever supports it
-            try:
-                chain = (
-                    self.retriever
-                    | self.format_docs
-                    | {"content": RunnablePassthrough()}
-                    | self.draft_prompt_template
-                    | self.llm
-                    | self.output_parser
-                )
-                return chain.invoke("")
-            except Exception:
-                docs = []
-
-        content = self.format_docs(docs or [])
+        """처리된 문서 전체를 사용하여 블로그 초안을 생성합니다."""
+        content = self.format_docs(self.processed_docs)
         draft = self.draft_chain.invoke({"content": content})
-
-        # If memory is present, persist the generated draft into memory so future updates can reference it.
-        try:
-            if getattr(self, "memory", None) is not None and hasattr(self.memory, "save_context"):
-                # store a minimal context indicating the generated draft
-                self.memory.save_context({"input": "generate_draft"}, {"output": draft})
-        except Exception:
-            # memory saving is best-effort; do not fail draft generation if memory saving errors
-            pass
-
+        self.memory.save_context({"input": "초안을 생성해줘."}, {"output": "초안이 생성되었습니다."})
         return draft
 
-    def update_blog_post(self, *args, **kwargs) -> str:
-        """Update blog post using ConversationChain when memory exists, otherwise fall back to stateless flow.
-
-        Supports two call patterns:
-        - update_blog_post(user_request)
-        - update_blog_post(current_blog_post, user_request)
+    def update_blog_post(self, user_request: str, current_draft: str) -> dict:
         """
-        user_request = None
-        blog_post = None
-        if len(args) == 1:
-            user_request = args[0]
-        elif len(args) >= 2:
-            blog_post, user_request = args[0], args[1]
-        else:
-            user_request = kwargs.get("user_request")
-            blog_post = kwargs.get("blog_post")
+        사용자의 요청을 단일 LLM 호출로 처리하고, 응답 JSON을 파싱합니다.
+        """
+        t0 = time.perf_counter()
+        
+        response_str = self.update_chain.invoke({
+            "history": self.memory.chat_memory.messages,
+            "input": user_request,
+            "draft": current_draft,
+        })
+        
+        duration = time.perf_counter() - t0
+        self.logger.info(f"Update call took {duration:.2f} seconds.")
 
-        if getattr(self, "update_chain", None) is not None:
-            # Provide the current blog post + user's request together as the 'input'
-            # so the update prompt has the full content to edit.
-            combined_input = (
-                f"Current blog post:\n{blog_post or ''}\n\nUser request:\n{user_request or ''}"
-            )
-            result = self.update_chain.invoke({"input": combined_input})
-
-            # Normalize result
-            updated = None
-            if isinstance(result, dict):
-                updated = result.get("output") or result.get("text")
+        # Robust JSON parsing
+        try:
+            response_json = json.loads(response_str)
+            # Ensure the response has the expected structure
+            if "chat_response" in response_json and "updated_draft" in response_json:
+                self.memory.save_context({"input": user_request}, {"output": response_json["chat_response"]})
+                return response_json
             else:
-                updated = result
+                raise ValueError("Invalid JSON structure")
+        except (json.JSONDecodeError, ValueError) as e:
+            self.logger.error(f"Failed to parse LLM response as valid JSON: {e}\nResponse: {response_str}")
+            # Fallback: Treat the entire response as a chat message and don't update the draft
+            self.memory.save_context({"input": user_request}, {"output": response_str})
+            return {"chat_response": response_str, "updated_draft": current_draft}
 
-            # Persist the update into memory if available (best-effort)
-            try:
-                if getattr(self, "memory", None) is not None and hasattr(self.memory, "save_context"):
-                    self.memory.save_context({"input": combined_input}, {"output": updated})
-            except Exception:
-                pass
-
-            return updated or ""
-
-        # For stateless updates, the update prompt expects {input} (and {history} when memory exists).
-        # Build a combined 'input' value that contains the current blog post and the user's request so
-        # the prompt has the necessary context to perform an edit.
-        combined_input = (
-            f"Current blog post:\n{blog_post or ''}\n\nUser request:\n{user_request or ''}"
-        )
-
-        chain = self.update_prompt_template | self.llm | self.output_parser
-        result = chain.invoke({"input": combined_input})
-
-        # The runnable pipeline may return a mapping or a string depending on the LLM wrapper; normalize.
-        if isinstance(result, dict):
-            return result.get("output") or result.get("text") or ""
-        return result
+    def get_session_history(self):
+        """Helper for UI to render chat history."""
+        return self.memory.chat_memory
 
     @staticmethod
     def format_docs(documents: list[Document]) -> str:
-        """Combine a list of Document objects into a single string."""
+        """Document 객체 리스트를 하나의 긴 문자열로 결합합니다."""
         return "\n\n".join(doc.page_content for doc in documents)
-

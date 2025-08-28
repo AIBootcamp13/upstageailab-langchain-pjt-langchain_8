@@ -19,18 +19,23 @@ draft_prompt: |
 
   블로그 포스트를 작성해주세요:
 
-# ConversationChain에 맞게 수정된 프롬프트
-# 사용하는 변수: {history}, {input}
+# 복합 요청 처리를 위한 최종 프롬프트 (예제 제거)
 update_prompt: |
-  당신은 블로그 포스트를 수정하는 AI 어시스턴트입니다.
-  아래 대화 기록을 참고하여 사용자의 최신 요청에 따라 블로그 포스트를 수정해주세요.
-  수정된 전체 블로그 포스트를 Markdown 형식으로만 응답해야 합니다. 다른 설명은 붙이지 마세요.
+  You are an AI assistant that modifies a blog post based on a conversation.
 
-  [대화 기록]
+  **IMPORTANT INSTRUCTIONS:**
+  1.  Analyze the user's request. It may contain both a question and an edit command (e.g., "What is today's date, and also translate the title to English?").
+  2.  If the request includes a question, provide a clear answer.
+  3.  If the request includes an edit command, modify the 'Current draft' accordingly.
+  4.  You MUST respond with a single JSON object containing two keys: "chat_response" and "updated_draft".
+      - "chat_response": Your conversational answer to the user's question. If there's no question, this should be a simple confirmation message (e.g., "I have updated the draft as requested.").
+      - "updated_draft": The FULL, modified blog post in Markdown format. If no edits were made, return the original, unchanged draft.
+
+  [CONVERSATION HISTORY]
   {history}
 
-  [사용자 요청]
-  Human: {input}
+  [USER REQUEST]
+  {input}
 
-  [수정된 블로그 포스트]
-  AI:
+  [CURRENT DRAFT]
+  {draft}
