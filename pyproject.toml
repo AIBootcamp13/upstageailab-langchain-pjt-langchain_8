@@ -8,7 +8,7 @@ authors = [
 readme = "README.md"
 requires-python = "3.11.11"
 dependencies = [
-    "python-dotenv (>=1.1.1,<2.0.0)",
+     "python-dotenv (>=1.1.1,<2.0.0)",
     "streamlit (>=1.48.1,<2.0.0)",
     "langchain (>=0.3.27,<0.4.0)",
     "langchain-core (>=0.3.27,<0.4.0)",
@@ -32,6 +32,7 @@ dependencies = [
     "pysqlite3-binary (>=0.5.4,<0.6.0); sys_platform != 'darwin'",
     "sentence-transformers (>=2.2.2,<3.0.0)",
     "langchain-tavily (>=0.1.1,<0.2.0)",
+
 
 ]
 

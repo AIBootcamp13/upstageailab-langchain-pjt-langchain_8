@@ -4,21 +4,23 @@ from pathlib import Path
 
 import streamlit as st
 
+from src.config import INGESTION_PARSER
 from src.document_preprocessor import DocumentPreprocessor
 from src.retriever import RetrieverFactory
 from src.ui.enums import SessionKey
 from src.vector_store import VectorStore
-from src.config import INGESTION_PARSER
+
 
 class FileUploader:
     """
-    파일을 업로드받아 Vector DB와 Retriever를 초기화하는 UI 컴포넌트.
+    Handles file uploads and initializes the Vector DB and Retriever.
     """
+
     def __init__(self):
         self.available_types = ["pdf"]
 
     def render(self) -> bool:
-        """Streamlit UI를 렌더링하고 파일 처리 로직을 실행합니다."""
+        """Renders the Streamlit UI for file uploading and processing."""
         st.subheader("자료 업로드")
         if uploaded_file := st.file_uploader(
             f"'{', '.join(self.available_types)}' 형식의 파일을 선택해주세요.",
@@ -30,20 +32,20 @@ class FileUploader:
                     file_path = Path(temp_file.name)
 
                 try:
-                    # 1. 문서 전처리
+                    # 1. Preprocess the document
                     preprocessor = DocumentPreprocessor(file_path)
                     documents = preprocessor.process()
-                    # *** FIX: 처리된 문서를 세션 상태에 저장합니다. ***
+                    # *** FIX: Save processed documents to session state for the agent ***
                     st.session_state["processed_documents"] = documents
                     st.info(f"문서 전처리 완료: {len(documents)}개 청크 생성")
 
-                    # 2. 벡터 스토어에 저장
+                    # 2. Store documents in the vector store
                     vector_store = VectorStore()
                     vector_store.add_documents(documents)
                     st.session_state[SessionKey.VECTOR_STORE] = vector_store
                     st.info("VectorStore 초기화 완료")
 
-                    # 3. Retriever 생성
+                    # 3. Create the retriever
                     retriever = RetrieverFactory.create(vector_store)
                     st.session_state[SessionKey.RETRIEVER] = retriever
                     st.info("Retriever 초기화 완료")
