@@ -153,6 +153,21 @@ data
 # Exclude folders
 logs/
 log/
+# jekyll-site/
+jekyll-site/_site/
+jekyll-site/.sass-cache/
+jekyll-site/vendor/
+jekyll-site/.bundle/
+jekyll-site/node_modules/
+jekyll-site/.cache/
+
+# Bundler
+/.bundle
+.bundle
+
+# OS / editors
+.DS_Store
+/.vscode/
 
 # Do not ignore these (force include)
 !docs/assets/images/pdf-parser
