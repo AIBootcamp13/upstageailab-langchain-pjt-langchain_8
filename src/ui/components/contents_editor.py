@@ -29,6 +29,37 @@ class Message:
             contents=contents,
         )
 
+from dataclasses import dataclass
+
+import streamlit as st
+from langchain.memory import ConversationSummaryBufferMemory
+
+from src.agent import BlogContentAgent
+from src.ui.enums import SessionKey
+
+
+@dataclass(frozen=True)
+class Message:
+    ROLE_USER = "user"
+    ROLE_ASSISTANT = "assistant"
+
+    role: str
+    contents: str
+
+    @classmethod
+    def create_as_user(cls, contents: str) -> "Message":
+        return cls(
+            role=cls.ROLE_USER,
+            contents=contents,
+        )
+
+    @classmethod
+    def create_as_assistant(cls, contents: str) -> "Message":
+        return cls(
+            role=cls.ROLE_ASSISTANT,
+            contents=contents,
+        )
+
 
 class ContentsEditor:
     """
@@ -84,9 +115,10 @@ class ContentsEditor:
         """Streamlit UI를 렌더링하고 콘텐츠 생성 및 수정 로직을 실행합니다."""
         st.subheader("초안 생성 및 퇴고")
 
-<<<<<<< HEAD
+        # initialize or get the agent (may attach a ConversationSummaryBufferMemory)
         self.agent = self._initialize_agent()
 
+        # generate draft if needed
         self._generate_draft_with_progress()
 
         draft_col, _, chat_col = st.columns([52, 1, 46])
@@ -104,87 +136,58 @@ class ContentsEditor:
         if SessionKey.RETRIEVER not in st.session_state:
             raise RuntimeError("먼저 파일을 업로드하여 Retriever를 초기화해야 합니다.")
 
-        if SessionKey.BLOG_CREATOR_AGENT not in st.session_state:
-=======
-        # --- 메모리 및 에이전트 초기화 로직 ---
-        if SessionKey.BLOG_CREATOR_AGENT not in st.session_state:
-            if SessionKey.RETRIEVER not in st.session_state:
-                st.warning("먼저 파일을 업로드하여 Retriever를 초기화해야 합니다.")
-                return False
+        # ensure message list exists for UI chat history
+        if SessionKey.MESSAGE_LIST not in st.session_state:
+            st.session_state[SessionKey.MESSAGE_LIST] = []
 
->>>>>>> feature/memory
+        if SessionKey.BLOG_CREATOR_AGENT not in st.session_state:
             retriever = st.session_state[SessionKey.RETRIEVER]
-            
+
+            # create a small llm instance for memory management; the agent will create its own LLM too,
+            # but ConversationSummaryBufferMemory expects an llm at construction time.
             from src.config import LLM_PROVIDER, LLM_MODEL
             from langchain_openai import ChatOpenAI
             from langchain_ollama import ChatOllama
 
             if LLM_PROVIDER == "openai":
-                llm = ChatOpenAI(model=LLM_MODEL)
+                llm_for_memory = ChatOpenAI(model=LLM_MODEL)
             else:
-                llm = ChatOllama(model=LLM_MODEL)
-            
+                llm_for_memory = ChatOllama(model=LLM_MODEL)
+
             memory = ConversationSummaryBufferMemory(
-                llm=llm, 
+                llm=llm_for_memory,
                 max_token_limit=1000,
                 return_messages=True,
                 memory_key="history",
-                output_key="output"
+                output_key="output",
             )
-            st.session_state[SessionKey.MESSAGE_LIST] = memory
 
-            st.session_state[SessionKey.BLOG_CREATOR_AGENT] = BlogContentAgent(retriever, memory)
+            agent = BlogContentAgent(retriever, memory)
+            st.session_state[SessionKey.BLOG_CREATOR_AGENT] = agent
 
         return st.session_state[SessionKey.BLOG_CREATOR_AGENT]
 
-<<<<<<< HEAD
     def _generate_draft_with_progress(self):
         """초안이 없으면 초안을 생성하고, 있다면 그 값을 반환"""
         if self.draft:
             return
-=======
-        # 초안이 없으면 "초안 생성" 버튼을 표시합니다.
-        if SessionKey.BLOG_DRAFT not in st.session_state:
-            if st.button("블로그 초안 생성하기", type="primary"):
-                with st.spinner(f"초안 생성 중... (LLM: '{agent.llm.model}')"):
-                    draft = agent.generate_draft()
-                    st.session_state[SessionKey.BLOG_DRAFT] = draft
-                    agent.memory.save_context(
-                        {"input": "초안을 생성해줘."},
-                        {"output": draft}
-                    )
-                st.rerun()
 
-        # 초안이 있으면 화면에 표시하고 수정 UI를 제공합니다.
-        if SessionKey.BLOG_DRAFT in st.session_state:
-            draft = st.session_state[SessionKey.BLOG_DRAFT]
-            st.markdown("---")
-            st.markdown(draft)
-            st.markdown("---")
+        # defensive model name extraction
+        model_name = None
+        try:
+            model_name = getattr(self.agent.llm, "model_name", None) or getattr(self.agent.llm, "model", None)
+        except Exception:
+            model_name = None
 
-            if "messages" not in st.session_state:
-                st.session_state.messages = []
-
-            for message in st.session_state.messages:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
-
-            if prompt := st.chat_input("수정하고 싶은 내용을 입력하세요..."):
-                st.session_state.messages.append({"role": "user", "content": prompt})
-                with st.chat_message("user"):
-                    st.markdown(prompt)
-
-                with st.chat_message("assistant"):
-                    # *** FIX: 스피너 메시지를 좀 더 일반적인 내용으로 변경 ***
-                    with st.spinner("요청을 처리하는 중..."):
-                        updated_draft = agent.update_blog_post(prompt)
-                        st.session_state[SessionKey.BLOG_DRAFT] = updated_draft
-                        st.markdown(updated_draft)
-                        st.session_state.messages.append({"role": "assistant", "content": updated_draft})
->>>>>>> feature/memory
-
-        with st.status(f"💬 초안 생성 중... (LLM: '{self.agent.llm.model_name}')", expanded=True) as status:
+        with st.status(f"💬 초안 생성 중... (LLM: '{model_name}')", expanded=True) as status:
             self.draft = self.agent.generate_draft()
+            # persist generated draft into agent memory if available
+            try:
+                if getattr(self.agent, "memory", None) is not None and hasattr(self.agent.memory, "save_context"):
+                    self.agent.memory.save_context({"input": "generate_draft"}, {"output": self.draft})
+            except Exception:
+                # memory save is best-effort
+                pass
             status.update(label="✅  블로그 포스트 초안 생성 완료!", state="complete", expanded=False)
 
     def _render_draft_preview(self, draft_column):
@@ -215,10 +218,6 @@ class ContentsEditor:
             with st.spinner("⏳ 수정 사항 반영 중..."):
                 updated_draft = self.agent.update_blog_post(self.draft, self.user_request)
 
-<<<<<<< HEAD
-            self.draft = updated_draft
-            self.add_assistant_message(f"'{self.user_request}' 를 반영했습니다.\n추가 요청이 있으신가요?")
-            st.rerun()
-=======
-        return False
->>>>>>> feature/memory
+                self.draft = updated_draft
+                self.add_assistant_message(f"'{self.user_request}' 를 반영했습니다.\n추가 요청이 있으신가요?")
+                st.rerun()
