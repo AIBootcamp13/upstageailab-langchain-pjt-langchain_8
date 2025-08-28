@@ -15,3 +15,5 @@ class SessionKey(str, Enum):
     USER_REQUEST = "user_request"
     VECTOR_STORE = "vector_store"
     RETRIEVER = "retriever"
+
+    IS_PUBLISHED = "is_published"

@@ -9,7 +9,7 @@ from src.ui.enums import SessionKey
 
 @dataclass(frozen=True)
 class Message:
-    """A class to represent a chat message, matching the sandbox UI style."""
+    """A class to represent a chat message."""
     ROLE_USER = "user"
     ROLE_ASSISTANT = "assistant"
 
@@ -18,7 +18,7 @@ class Message:
 
 class ContentsEditor:
     """
-    Renders the main editor UI, combining the sandbox UI style with the feature/memory-search agent.
+    Renders the main editor UI, combining a blog post preview with a conversational chat panel.
     """
     def render(self) -> bool:
         """Renders the main editor UI."""
@@ -31,7 +31,7 @@ class ContentsEditor:
             self._generate_draft_with_progress(agent, session_id)
             return False
 
-        # Use the requested column layout with a small spacer
+        # Use a two-column layout with a small spacer
         draft_col, _, chat_col = st.columns([52, 1, 46])
 
         with draft_col:
@@ -71,8 +71,7 @@ class ContentsEditor:
             st.rerun()
 
     def _render_draft_preview(self):
-        """Renders the draft preview and markdown tabs."""
-        # *** FIX: Wrap the entire panel in a single container for alignment. ***
+        """Renders the draft preview and markdown tabs within a bordered container."""
         with st.container(height=750, border=True):
             st.markdown("##### **블로그 초안**")
             preview_tab, markdown_tab = st.tabs(["🖼️ Preview", "👨‍💻 Markdown"])
@@ -84,8 +83,7 @@ class ContentsEditor:
                 st.code(st.session_state.get(SessionKey.BLOG_DRAFT, ""), language="markdown")
 
     def _render_chat(self, agent: BlogContentAgent, session_id: str):
-        """Renders the chat panel, adapting the agent's history to the Message dataclass."""
-        # *** FIX: Wrap the entire panel in a single container for alignment. ***
+        """Renders the chat panel within a bordered container."""
         with st.container(height=750, border=True):
             st.markdown("##### **수정 및 대화**")
             
@@ -93,27 +91,25 @@ class ContentsEditor:
             with chat_container:
                 chat_history = agent.get_session_history(session_id).messages
                 for msg in chat_history:
-                    # Adapt LangChain's message object to the local Message dataclass
                     role = Message.ROLE_USER if msg.type == "human" else Message.ROLE_ASSISTANT
-                    message = Message(role=role, contents=msg.content)
-                    with st.chat_message(message.role):
-                        content_to_display = self._parse_ai_message(message)
+                    with st.chat_message(role):
+                        content_to_display = self._parse_ai_message(msg.content, role)
                         st.markdown(content_to_display)
 
             if user_request := st.chat_input("수정하고 싶은 내용을 입력하세요..."):
                 self._handle_user_prompt(agent, user_request, session_id)
 
-    def _parse_ai_message(self, message: Message) -> str:
+    def _parse_ai_message(self, content: str, role: str) -> str:
         """Parses the AI's message content to decide what to display."""
-        if message.role == Message.ROLE_USER:
-            return message.contents
+        if role == Message.ROLE_USER:
+            return content
         try:
-            data = json.loads(message.contents)
+            data = json.loads(content)
             if data.get("type") == "draft":
                 return "초안이 수정되었습니다. 왼쪽 패널에서 확인 후 추가 요청을 해주세요."
-            return data.get("content", message.contents)
+            return data.get("content", content)
         except (json.JSONDecodeError, TypeError):
-            return message.contents
+            return content
 
     def _handle_user_prompt(self, agent: BlogContentAgent, prompt: str, session_id: str):
         """Handles user input by calling the agent and updating the state."""

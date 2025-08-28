@@ -49,8 +49,6 @@ class BlogCreatorApp:
             self._render_edit_stage()
         elif current_stage == AppStage.PUBLISH:
             self._render_publish_stage()
-        else:
-            self._render_auth_stage()
 
     def _render_auth_stage(self):
         if self.github_authenticator.render():
@@ -66,7 +64,7 @@ class BlogCreatorApp:
 
     def _render_publish_stage(self):
         if self.publisher.render():
-            self._change_stage(AppStage.AUTH)
+            self._change_stage(AppStage.UPLOAD)
 
     def _change_stage(self, stage: AppStage):
         st.session_state[SessionKey.CURRENT_STAGE] = stage.value
