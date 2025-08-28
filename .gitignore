@@ -157,4 +157,5 @@ log/
 # Do not ignore these (force include)
 !docs/assets/images/pdf-parser
 !docs/feature-summary
-
+jekyll-site/
+archives/
