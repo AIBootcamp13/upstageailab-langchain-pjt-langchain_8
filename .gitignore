@@ -124,7 +124,7 @@ data
 
 # Exclude documentation drafts and notes
 docs/draft/
-docs/notes
+docs/notes/
 
 # Exclude specific documentation and notebook files
 docs/streamlit_run.md
