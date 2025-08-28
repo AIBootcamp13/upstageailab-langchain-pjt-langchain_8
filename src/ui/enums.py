@@ -12,6 +12,6 @@ class SessionKey(str, Enum):
     BLOG_POST = "blog_post"
     BLOG_CREATOR_AGENT = "blog_creator_agent"
     MESSAGE_LIST = "message_list"
-
+    USER_REQUEST = "user_request"
     VECTOR_STORE = "vector_store"
     RETRIEVER = "retriever"
