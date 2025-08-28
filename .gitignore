@@ -138,6 +138,10 @@ docs/notes/
 docs/streamlit_run.md
 !docs/assets/
 
+# Root-level media (keep local, don't track)
+/*.png
+/*.svg
+
 # Scripts to keep local-only
 scripts/comment_out_conda_in_bashrc.sh
 scripts/run_streamlit.sh
