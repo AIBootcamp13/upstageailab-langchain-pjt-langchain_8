@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import streamlit as st
 
 from src.agent import BlogContentAgent
+from src.config import LLM_MODEL
 from src.ui.enums import SessionKey
 
 
@@ -113,7 +114,7 @@ class ContentsEditor:
         if self.draft:
             return
 
-        with st.status(f"💬 초안 생성 중... (LLM: '{self.agent.llm.model_name}')", expanded=True) as status:
+        with st.status(f"💬 초안 생성 중... (LLM: '{LLM_MODEL}')", expanded=True) as status:
             self.draft = self.agent.generate_draft()
             status.update(label="✅  블로그 포스트 초안 생성 완료!", state="complete", expanded=False)
 
