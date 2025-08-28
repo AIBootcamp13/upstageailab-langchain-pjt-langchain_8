@@ -1,19 +1,20 @@
-# src/ui/components/file_uploader.py
 import tempfile
 from pathlib import Path
 
 import streamlit as st
 
+from src.config import INGESTION_PARSER
 from src.document_preprocessor import DocumentPreprocessor
 from src.retriever import RetrieverFactory
 from src.ui.enums import SessionKey
 from src.vector_store import VectorStore
-from src.config import INGESTION_PARSER
+
 
 class FileUploader:
     """
     파일을 업로드받아 Vector DB와 Retriever를 초기화하는 UI 컴포넌트.
     """
+
     def __init__(self):
         self.available_types = ["pdf"]
 
@@ -33,8 +34,6 @@ class FileUploader:
                     # 1. 문서 전처리
                     preprocessor = DocumentPreprocessor(file_path)
                     documents = preprocessor.process()
-                    # *** FIX: 처리된 문서를 세션 상태에 저장합니다. ***
-                    st.session_state["processed_documents"] = documents
                     st.info(f"문서 전처리 완료: {len(documents)}개 청크 생성")
 
                     # 2. 벡터 스토어에 저장

@@ -17,3 +17,4 @@ class SessionKey(str, Enum):
     RETRIEVER = "retriever"
 
     IS_PUBLISHED = "is_published"
+    SESSION_ID = "session_id"
