@@ -73,8 +73,8 @@ PPT나 문서 자료를 입력받아 고품질 블로그 포스트를 자동 생
 ```
 .
 ├── configs/                  # 설정 파일
-│   └── pconfig.yaml
-├── data/                     # 데이터 디렉토리
+│   └── config.yaml
+├── data/                     # 데이터 디렉토리 (pdf 등...)
 ├── docs/                     # 문서/가이드
 ├── logs/                     # 로그 저장소
 ├── notebooks/                # Jupyter/Colab 노트북
@@ -111,7 +111,53 @@ PPT나 문서 자료를 입력받아 고품질 블로그 포스트를 자동 생
 
 ## 💻 구현 기능
 
-- W.I.P.
+### 1. 환경 설정 및 구성 (config.py, config.yaml, prompts.yaml, multiple-prompts.yaml)
+- .env 및 config.yaml 기반으로 중앙 설정화: API 키, LLM/Embedding 모델, 검색 전략, 청킹 파라미터를 로드
+- profiles 설정을 통해 OpenAI / Ollama / HuggingFace 등 실행 환경을 쉽게 전환
+- 프롬프트(draft_prompt, update_prompt)를 YAML로 외부화 → 템플릿 수정·확장 용이
+
+### 2. 문서 전처리 및 벡터화 (document_preprocessor.py, vector_store.py, retriever.py)
+- PDF 업로드 → 선택된 파서(api, unstructured, local)로 로드 → 텍스트 청킹 (ChunkSize/Overlap 반영)
+- 벡터스토어(Chroma)에 임베딩 저장: OpenAI 또는 HuggingFace 모델 선택 가능
+- RetrieverFactory에서 설정값 기반 Retriever 생성 (유사도 검색/MaxMarginalRelevance 등)
+
+### 3. 에이전트 및 툴 통합 (agent.py, agent_tool.py)
+- **BlogContentAgent**
+>- LLM(OpenAI/Ollama) 초기화, 문서 기반 초안 생성 체인 구축
+>- Retriever Tool + Tavily Web Search Tool 결합한 Tool-Calling Agent 실행
+>- 세션 단위로 채팅 기록 저장, 초안 생성(generate_draft), 수정 요청(update_blog_post) 처리
+
+- **Web Search Tool (agent_tool.py)**
+>- Tavily API 기반 검색 도구, JSON 형식으로 결과 정규화
+
+### 4. UI 컴포넌트 (ui/components/…)
+**1. 인증 (github_auth.py)**
+- GitHub PAT/Username 입력 → repo 권한 확인 후 session_state에 저장
+
+**2. 업로드 (file_uploader.py)**
+- PDF 업로드 → 전처리 → VectorStore/Retreiver 생성 및 세션 저장
+
+**3. 편집 (contents_editor.py)**
+- BlogContentAgent 초기화, 초안 생성·미리보기, 채팅 기반 수정 반영
+
+**4. 발행 (publisher.py)**
+- 제목/카테고리/태그 입력 → Jekyll Front Matter 생성 → _posts/에 파일 작성 및 GitHub Pages 발행
+
+### 5. 앱 구동 및 단계 관리 (app.py, main.py, enums.py)
+- 단계 전환: AUTH → UPLOAD → EDIT → PUBLISH 순서로 UI 제어
+- SessionKey Enum으로 세션 상태 관리 (VectorStore, Retriever, Draft, Agent, Messages 등)
+- main.py에서 Streamlit 실행 entrypoint 제공
+
+### 6. 로깅 (logger.py)
+- JSON 포맷 로그 + 콘솔 로그 동시 기록
+- 파일 단위 로테이션 로그 지원
+
+### 7.전체 플로우 (PDF 참조)
+- 사용자 여정: GitHub 인증 → 파일 업로드 → 초안 생성/퇴고 → 발행
+- UI ↔ RAG 연결:
+>- FileUploader → DocumentPreprocessor → VectorStore → Retriever
+>- ContentsEditor → BlogContentAgent (Retriever+Tavily) → Draft/Update
+>- Publisher → GitHub Repo 업로드 → Pages 발행
 
 ## 🛠️ 작품 아키텍처
 
