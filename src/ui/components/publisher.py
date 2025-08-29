@@ -164,7 +164,18 @@ class Publisher:
 
             # 5. 블로그 URL 표시
             username = self.github_repo_name.split("/")[0]
-            blog_url = f"https://{username}.github.io/{file_name[11:-3]}/"  # 날짜와 .md 제거
+            # public posts path usually drops the leading underscore from the folder name
+            public_posts_path = self.POSTS_FOLDER.lstrip("_").rstrip("/")
+            # derive slug by removing date prefix (YYYY-MM-DD-) and file extension
+            try:
+                slug = file_name[11:-3]
+            except Exception:
+                # fallback: remove extension and any leading date-like prefix
+                slug = file_name.rsplit(".", 1)[0]
+                if slug.count("-") >= 3:
+                    slug = "-".join(slug.split("-")[3:])
+
+            blog_url = f"https://{username}.github.io/{public_posts_path}/{slug}/"
             st.info(f"📝 블로그 포스트 URL: {blog_url}")
             st.caption("⏰ GitHub Pages 반영까지 몇 분 소요될 수 있습니다.")
             return True

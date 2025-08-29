@@ -105,7 +105,9 @@ class ContentsEditor:
                 self._handle_user_prompt(agent, user_request, session_id)
 
     def _parse_ai_message(self, content: str, role: str) -> str:
-        """Parses the AI's message content to decide what to display."""
+        """
+        Parses the AI's message content to decide what to display in the chat.
+        """
         if role == Message.ROLE_USER:
             return content
         try:
@@ -118,7 +120,6 @@ class ContentsEditor:
 
     def _handle_user_prompt(self, agent: BlogContentAgent, prompt: str, session_id: str):
         """Handles user input by calling the agent and updating the state."""
-
         with st.spinner("⏳ 수정 사항 반영 중..."):
             response_data = agent.update_blog_post(prompt, session_id)
 

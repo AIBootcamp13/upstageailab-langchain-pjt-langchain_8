@@ -120,17 +120,53 @@ class BlogContentAgent:
     def get_session_history(self, session_id: str):
         """주어진 세션 ID에 대한 채팅 기록을 가져오거나 새로 생성합니다."""
         if session_id not in self.chat_history_store:
-            self.chat_history_store[session_id] = ChatMessageHistory()
+            # Use a thin wrapper to guarantee the returned object has a `.messages` attribute
+            class HistoryWrapper:
+                def __init__(self, inner: ChatMessageHistory):
+                    self._inner = inner
+
+                def add_user_message(self, message: str):
+                    return self._inner.add_user_message(message)
+
+                def add_ai_message(self, message: str):
+                    return self._inner.add_ai_message(message)
+
+                def add_messages(self, messages):
+                    """Pass-through to underlying history's add_messages method.
+
+                    Accepts the list/iterable of messages and forwards to the inner
+                    ChatMessageHistory implementation so LangChain's calls succeed.
+                    """
+                    return self._inner.add_messages(messages)
+
+                @property
+                def messages(self):
+                    return self._inner.messages
+
+                def get_messages(self):
+                    return self._inner.messages
+
+            self.chat_history_store[session_id] = HistoryWrapper(ChatMessageHistory())
         return self.chat_history_store[session_id]
 
     def generate_draft(self, session_id: str) -> str:
-        """처리된 문서에서 초기 블로그 초안을 생성합니다."""
+        """처리된 문서에서 초기 블로그 초안을 생성합니다.
+
+        Steps:
+        - Format the processed documents into a single content string
+        - Invoke the draft chain to produce markdown text
+        - Record user/assistant messages into the session history
+        - Store the assistant message as JSON while preserving Unicode
+        """
         content = self.format_docs(self.processed_docs)
         draft = self.draft_chain.invoke({"content": content})
 
         history = self.get_session_history(session_id)
         history.add_user_message("제공된 문서를 바탕으로 블로그 초안을 생성해줘.")
-        history.add_ai_message(json.dumps({"type": "draft", "content": draft}))
+
+        # Preserve Unicode characters when storing draft JSON so we don't get \uXXXX escapes
+        payload = {"type": "draft", "content": draft}
+        history.add_ai_message(json.dumps(payload, ensure_ascii=False))
         return draft
 
     def update_blog_post(self, user_request: str, session_id: str) -> dict:
