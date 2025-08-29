@@ -1,6 +1,6 @@
 # **🤝 기여하기 (Contributing Guide)**
 
-이 프로젝트에 기여해주셔서 감사합니다! 이 문서는 원활한 협업을 위한 개발 워크플로우, 코드 스타일, 그리고 Pull Request 가이드를 제공합니다.
+이 프로젝트에 기여해주셔서 감사합니다! 이 문서는 원활한 협업을 위한 개발 워크플로우, 코드 스타일, 그리고 `Pull Request` 가이드를 제공합니다.
 
 ## **💡 핵심 원칙**
 
@@ -19,12 +19,18 @@
    * 항상 최신 main 브랜치에서 새로운 브랜치를 생성합니다.  
    * 브랜치 이름은 아래의 **네이밍 규칙**을 따릅니다.
 
-# 로컬 main 브랜치를 최신 상태로 업데이트  
+# 로컬 main 브랜치를 최신 상태로 업데이트 
+
+```bash 
 git checkout main  
 git pull origin main
+```
 
-# 새로운 브랜치 생성 및 이동  
+# 새로운 브랜치 생성 및 이동
+
+```bash  
 git checkout -b feature/#이슈번호-간단한-설명
+```
 
 3. **개발 및 테스트**:  
    * 해당 브랜치에서 코드를 작성하고 기능을 구현합니다.  
@@ -33,11 +39,13 @@ git checkout -b feature/#이슈번호-간단한-설명
 4. **커밋 및 Push**:  
    * 작업 내용은 논리적인 단위로 커밋합니다.  
    * 커밋 메시지는 아래의 **커밋 메시지 컨벤션**을 따릅니다.  
-   * 작업이 완료되면 원격 저장소에 브랜치를 Push 합니다.
+   * 작업이 완료되면 원격 저장소에 브랜치를 `Push` 합니다.
 
+```bash
 git add .  
 git commit -m "feat: #123 로그인 기능 추가"  
 git push origin feature/#123-로그인-기능-추가
+```
 
 5. **Pull Request (PR) 생성**:  
    * GitHub에서 "Compare & pull request" 버튼을 클릭하여 PR을 생성합니다.  
@@ -86,6 +94,8 @@ git push origin feature/#123-로그인-기능-추가
 
 프로젝트를 클론한 후, 반드시 아래 명령어를 실행하여 pre-commit 훅을 설정해주세요.
 
+```bash
 poetry run pre-commit install
+```
 
-이후 git commit을 실행할 때마다 Ruff가 자동으로 코드를 검사하고 일부를 수정해줍니다.
+이후 `git commit`을 실행할 때마다 Ruff가 자동으로 코드를 검사하고 일부를 수정해줍니다.

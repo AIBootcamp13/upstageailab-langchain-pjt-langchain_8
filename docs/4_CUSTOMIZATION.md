@@ -1,6 +1,6 @@
 # **🔧 설정 및 커스터마이징**
 
-이 문서는 configs/config.yaml과 prompts/prompts.yaml 파일을 수정하여 프로젝트의 동작을 사용자의 필요에 맞게 변경하는 방법을 설명합니다.
+이 문서는 `configs/config.yaml`과 `prompts/prompts.yaml `파일을 수정하여 프로젝트의 동작을 사용자의 필요에 맞게 변경하는 방법을 설명합니다.
 
 ## **1. 핵심 동작 설정 (configs/config.yaml)**
 
@@ -15,9 +15,10 @@
 
 **프로필 변경 방법 (터미널):**
 
-# high_gpu 프로필로 애플리케이션 실행  
+# high_gpu 프로필로 애플리케이션 실행
+```bash  
 ENV_PROFILE=high_gpu poetry run streamlit run src/main.py
-
+```
 ### **1.2 모델 변경**
 
 profiles 섹션에서 사용할 LLM과 임베딩 모델을 변경할 수 있습니다.
