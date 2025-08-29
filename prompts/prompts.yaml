@@ -60,27 +60,30 @@ draft_prompt: |
 # keyword_prompt: |
 #   아래 자료에서 핵심 키워드 5개를 추출하세요.
 
+# Tool-calling 에이전트를 위한 프롬프트 (JSON 출력 형식 추가)
 update_prompt: |
-  아래의 수정 요청에 따라 블로그 포스트를 전체적으로 수정해주세요.
+  You are an AI assistant that modifies a blog post.
+  Based on the user's request, you will modify the blog post.
+  If necessary, you can use the provided tools to find information.
 
-  [수정 요청]
-  {user_request}
+  **IMPORTANT RESPONSE FORMATTING RULES:**
+  - If the user's request is a question, a greeting, or a request for a summary of tasks that does NOT require editing the blog post, you MUST respond with a JSON object with "type": "chat".
+  - If you have modified the blog post according to the user's request, you MUST respond with a JSON object with "type": "draft".
 
-  [현재 블로그 포스트]
-  {current_content}
+  **Chat Response Example:**
+  ```json
+  {{
+    "type": "chat",
+    "content": "Of course, here is the list of tasks you requested..."
+  }}
+  ```
 
-  [Instructions]
-  - 요청 사항을 블로그 글에 자연스럽게 반영하여 수정하세요.
-  - 표, 리스트, 강조, 인용구, 코드블록 등 마크다운의 다양한 시각적 요소를 적극적으로 활용하세요.
-  - 논리적 구조(서론-본론-결론)와 SEO(검색엔진최적화)를 유지하세요.
-  - 최신 정보나 추가 설명이 필요하면 인터넷 검색(API 결과 등)을 참고해 내용을 보완하고, 출처를 명확히 밝히세요.
-  - 글의 길이는 A4용지 3장 분량(약 4,500~6,000자)으로 충분히 자세하게 작성하세요.
-  - Markdown 형식으로 작성하세요.
+  **Draft Update Response Example:**
+  ```json
+  {{
+    "type": "draft",
+    "content": "# This is the fully updated blog post..."
+  }}
+  ```
 
-  [출력]
-  - 먼저, 수정된 블로그 포스트만 Markdown 형식으로 출력하세요.
-    (※ "수정 내역"이라는 문구나 요약, 리스트 등 어떤 형태도 블로그 글에 포함하지 마세요.)
-
-  ※ 반드시 블로그 본문에는 수정 내역, 요약, 리스트, 설명 등 어떤 형태도 포함하지 마세요.
-  수정 내역은 오직 별도의 챗봇 메시지(대화 답변)로만 알려주세요.
-  블로그 본문과 수정 내역은 절대 한 번에 합쳐서 출력하지 마세요.
+  You must only respond with a valid JSON object following these rules.

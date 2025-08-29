@@ -1,107 +1,110 @@
-# tool 사용을 위한 라이브러리 import
-from langchain_core.documents import Document
-from langchain_core.messages import ToolMessage
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-from langchain_ollama import ChatOllama
+import json
 
-# 지원하는 모든 LLM 클래스를 import합니다.
+from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langchain.tools.retriever import create_retriever_tool
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_community.tools import TavilySearchResults
+from langchain_core.documents import Document
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 
-from src.agent_tool import web_search  # 현재 구현된 툴(web_search) 바인딩
-
 # 중앙 설정 파일에서 필요한 설정값을 가져옵니다.
-from src.config import DRAFT_PROMPT_TEMPLATE, LLM_MODEL, LLM_PROVIDER, UPDATE_PROMPT_TEMPLATE
+from src.config import DRAFT_PROMPT_TEMPLATE, LLM_MODEL, LLM_PROVIDER, TAVILY_API_KEY, UPDATE_PROMPT_TEMPLATE
 
 
 class BlogContentAgent:
     """
-    검색된 컨텍스트를 바탕으로 블로그 초안을 생성하고 수정하는 에이전트 클래스.
-    설정에 따라 동적으로 LLM과 프롬프트를 로드합니다.
+    웹 검색 및 문서 검색 도구를 사용하여 블로그 초안을 생성하고 수정하는 Tool-Calling 에이전트.
     """
 
-    def __init__(self, retriever):
+    def __init__(self, retriever, processed_docs: list[Document]):
         self.retriever = retriever
+        self.processed_docs = processed_docs
+        self.chat_history_store = {}
 
-        # 설정된 LLM 제공자(provider)에 따라 LLM을 초기화합니다.
+        # 1. LLM 초기화
         if LLM_PROVIDER == "openai":
-            # OpenAI API를 사용하는 경우
-            self.llm = ChatOpenAI(model=LLM_MODEL)
+            self.llm = ChatOpenAI(model=LLM_MODEL, temperature=0)
         elif LLM_PROVIDER == "ollama":
-            # 로컬 Ollama 모델을 사용하는 경우
-            self.llm = ChatOllama(model=LLM_MODEL)
+            self.llm = ChatOllama(model=LLM_MODEL, temperature=0)
         else:
             raise ValueError(f"Unsupported LLM provider: {LLM_PROVIDER}")
 
-        # config에서 로드한 프롬프트 템플릿을 사용하여 ChatPromptTemplate 객체를 생성합니다.
+        # 2. 초안 생성을 위한 체인
         self.draft_prompt_template = ChatPromptTemplate.from_template(DRAFT_PROMPT_TEMPLATE)
-        self.update_prompt_template = ChatPromptTemplate.from_template(UPDATE_PROMPT_TEMPLATE)
-        self.output_parser = StrOutputParser()  # LLM의 출력을 문자열로 파싱합니다.
+        self.output_parser = StrOutputParser()
+        self.draft_chain = self.draft_prompt_template | self.llm | self.output_parser
 
-        # 추후 확장 가능한 툴 목록
-        self.tools = [web_search]
-
-    def generate_draft(self) -> str:
-        """검색된 문서를 바탕으로 블로그 포스트의 초안을 생성합니다."""
-        # retriever가 문서를 검색하고, format_docs를 통해 문자열로 변환된 후 프롬프트에 주입됩니다.
-        chain = (
-            self.retriever
-            | self.format_docs
-            | {"content": RunnablePassthrough()}
-            | self.draft_prompt_template
-            | self.llm
-            | self.output_parser
+        # 3. Tool-Calling 에이전트 설정
+        # 3-1. 도구 생성 (Retriever Tool 및 Web Search Tool)
+        retriever_tool = create_retriever_tool(
+            self.retriever,
+            "document_search",
+            "업로드된 PDF 문서에서 정보를 검색하고 반환합니다. 문서 내용에 대한 질문에 답할 때 사용하세요.",
         )
-        return chain.invoke("")
+        web_search_tool = TavilySearchResults(max_results=3, tavily_api_key=TAVILY_API_KEY)
+        tools = [retriever_tool, web_search_tool]
 
-    # 수정 (툴콜 내장)
-    def update_blog_post(self, blog_post: str, user_request: str) -> str:
-        """
-        입력/출력은 그대로 유지.
-        내부에서:
-          1) 프롬프트->LLM 1차 호출(툴 사용 여부는 LLM이 결정)
-          2) tool_calls가 있으면 해당 툴 실행 후 ToolMessage를 붙여 2차 호출
-          3) 최종 텍스트를 반환
-        """
-        # 메시지 구성 (프롬프트 템플릿 유지)
-        msgs = self.update_prompt_template.format_messages(
-            current_content=blog_post,
-            user_request=user_request,
+        # 3-2. 에이전트 프롬프트
+        self.update_prompt_template = ChatPromptTemplate.from_messages(
+            [
+                ("system", UPDATE_PROMPT_TEMPLATE),
+                MessagesPlaceholder(variable_name="chat_history"),
+                ("human", "{input}"),
+                MessagesPlaceholder(variable_name="agent_scratchpad"),
+            ]
         )
 
-        # 툴 바인딩된 LLM으로 1차 호출 (툴 사용 여부 판단은 LLM에 위임)
-        llm_with_tools = self.llm.bind_tools(self.tools)
-        ai_msg = llm_with_tools.invoke(msgs)
+        # 3-3. 에이전트 생성
+        agent = create_tool_calling_agent(self.llm, tools, self.update_prompt_template)
+        agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-        # 필요 시 툴콜 실행 (최대 1회로 제한)
-        tool_msgs: list[ToolMessage] = []
-        if getattr(ai_msg, "tool_calls", None):
-            for call in ai_msg.tool_calls:
-                name = call.get("name")
-                args = call.get("args", {}) or {}
+        # 3-4. 메모리와 함께 실행 가능한 체인으로 래핑
+        self.agent_with_chat_history = RunnableWithMessageHistory(
+            agent_executor,
+            self.get_session_history,
+            input_messages_key="input",
+            history_messages_key="chat_history",
+        )
 
-                if name == "web_search":
-                    # args: {"q": str, "max_results": int} 예상
-                    tool_output = web_search.invoke(args)
-                    tool_msgs.append(
-                        ToolMessage(
-                            tool_call_id=call["id"],
-                            name="web_search",
-                            content=tool_output,
-                        )
-                    )
+    def get_session_history(self, session_id: str):
+        """세션 ID에 해당하는 채팅 기록을 가져오거나 새로 생성합니다."""
+        if session_id not in self.chat_history_store:
+            self.chat_history_store[session_id] = ChatMessageHistory()
+        return self.chat_history_store[session_id]
 
-        # 툴 메시지가 있으면 대화 내역에 부착해 2차 호출 -> 최종 답변
-        if tool_msgs:
-            msgs = [*msgs, ai_msg, *tool_msgs]
-            final_msg = self.llm.invoke(msgs)
-            return self.output_parser.invoke(final_msg)
+    def generate_draft(self, session_id: str) -> str:
+        """처리된 문서 전체를 사용하여 블로그 초안을 생성합니다."""
+        content = self.format_docs(self.processed_docs)
+        draft = self.draft_chain.invoke({"content": content})
 
-        # 툴콜이 없었으면 1차 응답을 그대로 파싱해서 반환
-        return self.output_parser.invoke(ai_msg)
+        history = self.get_session_history(session_id)
+        history.add_user_message("제공된 문서를 바탕으로 블로그 초안을 생성해줘.")
+        history.add_ai_message(json.dumps({"type": "draft", "content": draft}))
+        return draft
+
+    def update_blog_post(self, user_request: str, session_id: str) -> dict:
+        """사용자의 수정 요청에 따라 에이전트를 실행하고 응답을 파싱합니다."""
+        config = {"configurable": {"session_id": session_id}}
+        response = self.agent_with_chat_history.invoke({"input": user_request}, config=config)
+
+        # JSON 파싱 안정성 확보
+        try:
+            output_str = response.get("output", "{}")
+            parsed_json = json.loads(output_str)
+            if isinstance(parsed_json, dict):
+                return parsed_json
+            return {"type": "chat", "content": str(parsed_json)}
+        except (json.JSONDecodeError, TypeError):
+            return {
+                "type": "chat",
+                "content": response.get("output", "죄송합니다, 응답을 처리하는 중 오류가 발생했습니다."),
+            }
 
     @staticmethod
     def format_docs(documents: list[Document]) -> str:
         """Document 객체 리스트를 하나의 긴 문자열로 결합합니다."""
-        return "\n".join(doc.page_content for doc in documents)
+        return "\n\n".join(doc.page_content for doc in documents)
