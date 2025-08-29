@@ -1,18 +1,20 @@
 # src/agent.py
 import json
 from difflib import SequenceMatcher
-from typing import Any, Dict, Type
+from typing import Any, Dict, List, Type
 
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain.tools.retriever import create_retriever_tool
 from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.documents import Document
+from langchain_core.messages import BaseMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.tools import BaseTool
-from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 from langchain_tavily import TavilySearch
 from pydantic import BaseModel, Field, PrivateAttr
 
@@ -60,6 +62,19 @@ class CachedTavilySearchTool(BaseTool):
         return result
 
 
+# --- FIX: Simplified the Chat History class ---
+# The previous version incorrectly overrode the `.messages` attribute as a property,
+# which caused the "'property' object has no attribute 'append'" error.
+# This new version correctly inherits the `.messages` list from the parent class
+# and only adds the `get_messages` method for compatibility with our UI component.
+class AgentChatMessageHistory(ChatMessageHistory):
+    """Custom chat history that adds a `get_messages` method for UI compatibility."""
+
+    def get_messages(self) -> List[BaseMessage]:
+        """Retrieves all messages from the history."""
+        return self.messages
+
+
 class BlogContentAgent:
     """
     웹 및 문서 검색을 사용하여 블로그 게시물 초안을 작성하고 편집하는 Tool-Calling 에이전트입니다.
@@ -69,7 +84,7 @@ class BlogContentAgent:
     def __init__(self, retriever, processed_docs: list[Document]):
         self.retriever = retriever
         self.processed_docs = processed_docs
-        self.chat_history_store = {}
+        self.chat_history_store: Dict[str, AgentChatMessageHistory] = {}
 
         # 1. LLM 초기화
         if LLM_PROVIDER == "openai":
@@ -85,17 +100,14 @@ class BlogContentAgent:
         self.draft_chain = self.draft_prompt_template | self.llm | self.output_parser
 
         # 3. Tool-Calling 에이전트 설정
-        # 3.1 캐시 기능이 있는 도구 생성 및 래핑
         retriever_tool = create_retriever_tool(
             self.retriever,
             "document_search",
             "업로드된 PDF 문서에서 정보를 검색하고 반환합니다. 문서 내용에 대한 질문에 답할 때 사용하세요.",
         )
-        # 새로운 BaseTool 호환 캐시 도구 사용
         cached_web_search_tool = CachedTavilySearchTool()
         tools = [retriever_tool, cached_web_search_tool]
 
-        # 3.2. 에이전트 프롬프트 정의
         self.update_prompt_template = ChatPromptTemplate.from_messages(
             [
                 ("system", UPDATE_PROMPT_TEMPLATE),
@@ -105,11 +117,9 @@ class BlogContentAgent:
             ]
         )
 
-        # 3.3. 에이전트 생성
         agent = create_tool_calling_agent(self.llm, tools, self.update_prompt_template)
         agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-        # 3.4. 채팅 기록 관리를 위해 에이전트 래핑
         self.agent_with_chat_history = RunnableWithMessageHistory(
             agent_executor,
             self.get_session_history,
@@ -117,54 +127,20 @@ class BlogContentAgent:
             history_messages_key="chat_history",
         )
 
-    def get_session_history(self, session_id: str):
+    def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
         """주어진 세션 ID에 대한 채팅 기록을 가져오거나 새로 생성합니다."""
         if session_id not in self.chat_history_store:
-            # Use a thin wrapper to guarantee the returned object has a `.messages` attribute
-            class HistoryWrapper:
-                def __init__(self, inner: ChatMessageHistory):
-                    self._inner = inner
-
-                def add_user_message(self, message: str):
-                    return self._inner.add_user_message(message)
-
-                def add_ai_message(self, message: str):
-                    return self._inner.add_ai_message(message)
-
-                def add_messages(self, messages):
-                    """Pass-through to underlying history's add_messages method.
-
-                    Accepts the list/iterable of messages and forwards to the inner
-                    ChatMessageHistory implementation so LangChain's calls succeed.
-                    """
-                    return self._inner.add_messages(messages)
-
-                @property
-                def messages(self):
-                    return self._inner.messages
-
-                def get_messages(self):
-                    return self._inner.messages
-
-            self.chat_history_store[session_id] = HistoryWrapper(ChatMessageHistory())
+            self.chat_history_store[session_id] = AgentChatMessageHistory()
         return self.chat_history_store[session_id]
 
     def generate_draft(self, session_id: str) -> str:
-        """처리된 문서에서 초기 블로그 초안을 생성합니다.
-
-        Steps:
-        - Format the processed documents into a single content string
-        - Invoke the draft chain to produce markdown text
-        - Record user/assistant messages into the session history
-        - Store the assistant message as JSON while preserving Unicode
-        """
+        """처리된 문서에서 초기 블로그 초안을 생성합니다."""
         content = self.format_docs(self.processed_docs)
         draft = self.draft_chain.invoke({"content": content})
 
         history = self.get_session_history(session_id)
         history.add_user_message("제공된 문서를 바탕으로 블로그 초안을 생성해줘.")
 
-        # Preserve Unicode characters when storing draft JSON so we don't get \uXXXX escapes
         payload = {"type": "draft", "content": draft}
         history.add_ai_message(json.dumps(payload, ensure_ascii=False))
         return draft
@@ -174,7 +150,6 @@ class BlogContentAgent:
         config = {"configurable": {"session_id": session_id}}
         response = self.agent_with_chat_history.invoke({"input": user_request}, config=config)
 
-        # 안정적인 JSON 파싱 보장
         try:
             output_str = response.get("output", "{}")
             parsed_json = json.loads(output_str)
@@ -186,3 +161,4 @@ class BlogContentAgent:
     def format_docs(documents: list[Document]) -> str:
         """Document 객체 리스트를 단일 문자열로 결합합니다."""
         return "\n\n".join(doc.page_content for doc in documents)
+

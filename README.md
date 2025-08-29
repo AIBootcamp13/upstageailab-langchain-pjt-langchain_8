@@ -1,422 +1,118 @@
-# Blog Content Creator Agent
 
-## 💻 프로젝트 소개
+# 📝 Blog Content Creator Agent
 
-### 프로젝트 개요
+**PDF 문서를 고품질 블로그 포스트로 자동 변환하고 GitHub Pages에 게시하는 LangChain 기반 자동화 시스템입니다.**
 
-PPT나 문서 자료를 입력받아 고품질 블로그 포스트를 자동 생성하고, 다양한 블로그 플랫폼에 자동으로 게시하는 LangChain 기반 자동화 시스템입니다.
+이 프로젝트는 `RAG`(Retrieval-Augmented Generation) 파이프라인을 기반으로, 사용자가 제공한 `PDF` 문서의 내용을 이해하고 요약하여 블로그 초안을 생성합니다. 또한, 웹 검색 도구를 활용하여 최신 정보를 보강하고, 대화형 인터페이스를 통해 사용자의 수정 요청을 실시간으로 반영할 수 있습니다.
 
-### 주요 특징
+## ✨ 주요 특징 (Key Features)
 
-- **Advanced RAG**: 다양한 chunking 전략으로 정확한 콘텐츠 생성
-- **Hallucination 방지**: LangSmith 활용한 프롬프트 최적화
-- **완전 자동화**: 자료 입력부터 블로그 발행까지 원클릭 처리
-- **멀티 플랫폼**: 네이버 블로그, 티스토리 등 주요 플랫폼 지원
+* **RAG 기반 콘텐츠 생성**: `PDF` 문서 내용을 기반으로 정확하고 일관성 있는 블로그 초안을 생성합니다.
+* **동적 도구 사용**: `document_search`와 `tavily_search` 도구를 활용하여 문서 및 웹의 정보를 동적으로 결합합니다.
+* **설정 가능한 아키텍처**: `config.yaml`을 통해 LLM, 임베딩 모델, 데이터 처리 방식을 유연하게 변경할 수 있습니다.
+* **대화형 수정**: Streamlit 기반 UI에서 AI 에이전트와 대화하며 실시간으로 콘텐츠를 수정하고 개선할 수 있습니다.
+* **자동 발행**: 완성된 콘텐츠를 Jekyll 형식에 맞게 변환하여 GitHub Pages에 자동으로 게시합니다.
 
-#### 핵심 기능
 
-**Phase 1: 콘텐츠 생성**
+## 🎨 주요 기능 데모 (Key Features Demo)
 
-- PPT/PDF 등 자료 입력 → Markdown 형식 블로그 초안 생성
-- RAG 기술을 활용한 정확한 정보 추출 및 구조화
+| 파일 업로드 | 실시간 콘텐츠 편집 |
+| :---: | :---: |
+| <a href="docs/assets/images/demo/streamlit-ui-fileupload-screen.png"><img src="docs/assets/images/demo/streamlit-ui-fileupload-screen.png" alt="File upload screen" width="100%" /></a> | <a href="docs/assets/images/demo/streamlit-ui-live-editor.png"><img src="docs/assets/images/demo/streamlit-ui-live-editor.png" alt="Streamlit live editor" width="100%" /></a> |
+| **1. PDF 문서 업로드** | **2. AI와 대화하며 초안 수정** |
+| 발행 성공 | 생성된 블로그 포스트 |
+| <a href="docs/assets/images/demo/blog-post-publish-success-screen.png"><img src="docs/assets/images/demo/blog-post-publish-success-screen.png" alt="Blog publish success screen" width="100%" /></a> | <a href="docs/assets/images/demo/ai-generated-blog-post.png"><img src="docs/assets/images/demo/ai-generated-blog-post.png" alt="AI generated blog post" width="100%" /></a> |
+| **3. GitHub Pages에 자동 발행** | **4. 고품질 블로그 초안 생성** |
+| 블로그 홈페이지 | 생성된 표 예시 |
+| <a href="docs/assets/images/demo/ai-generated-blogs-home.png"><img src="docs/assets/images/demo/ai-generated-blogs-home.png" alt="Blogs home" width="100%" /></a> | <a href="docs/assets/images/demo/ai-generated-blog-post-tables.png"><img src="docs/assets/images/demo/ai-generated-blog-post-tables.png" alt="AI generated blog tables" width="100%" /></a> |
+| **5. 발행된 블로그 확인** | **6. 목차 및 레이아웃 적용** |
 
-**Phase 2: 자동 게시**
+  
 
-- 생성된 콘텐츠를 블로그 플랫폼에 자동 게시
-- 로그인 → 글 작성 → 저장/발행까지 완전 자동화
+## 🚀 빠른 시작 (Quick Start)
 
-#### 활용 사례
+### **사전 요구사항**
 
-- 회사 발표 자료 → 기술 블로그 포스트
-- 강의 자료 → 학습 블로그 글
-- 아이디어 메모 → 완성도 높은 콘텐츠
+* Python 3.11+
+* Poetry
 
-## 👨‍👩‍👦‍👦 팀 구성원
+### **설치 및 실행**
 
-| ![조의영](https://avatars.githubusercontent.com/u/4915390?v=4) | ![최웅비](https://avatars.githubusercontent.com/u/97170457?v=4) | ![고민주](https://avatars.githubusercontent.com/u/204635884?v=4) | ![박성진](https://avatars.githubusercontent.com/u/204808507?v=4) | ![조은별](https://avatars.githubusercontent.com/u/178245805?v=4) | ![김효석](https://avatars.githubusercontent.com/u/159979869?v=4) |
-|:-----------------------------------------------------------:|:------------------------------------------------------------:|:-------------------------------------------------------------:|:-------------------------------------------------------------:|:-------------------------------------------------------------:|:-------------------------------------------------------------:|
-|             [조의영](https://github.com/yuiyeong)              |              [최웅비](https://github.com/Wchoi189)              |             [고민주](https://github.com/PaperToCode)             |              [박성진](https://github.com/psj2024p)               |              [조은별](https://github.com/eunbyul2)               |            [김효석](https://github.com/david1005910)             |
-|                         팀장, W.I.P.                          |                            W.I.P.                            |                            W.I.P.                             |                            W.I.P.                             |                            W.I.P.                             |                            W.I.P.                             |
+1.  **Repository 클론**
+    ```bash
+    git clone [https://github.com/AIBootcamp13/upstageailab-langchain-pjt-langchain_8.git](https://github.com/AIBootcamp13/upstageailab-langchain-pjt-langchain_8.git)
+    cd upstageailab-langchain-pjt-langchain_8
+    ```
+2.  **의존성 설치**
+    ```bash
+    poetry install
+    ```
+3.  **환경변수 설정**
+    ```bash
+    cp .env.template .env
+    # .env 파일에 OpenAI, Tavily API 키 입력
+    ```
+4.  **애플리케이션 실행**
+    ```bash
+    poetry run streamlit run src/main.py
+    ```
+더 자세한 내용은 [설치 가이드](docs/1_INSTALLATION.md)를 참고하세요.
 
-## 🔨 개발 환경 및 기술 스택
+## 🔨 기술 스택 (Tech Stack)
 
-**언어 및 프레임워크**
+* **Language**: Python 3.11
+* **Frontend**: Streamlit
+* **AI/ML**: LangChain, OpenAI, Ollama
+* **Vector DB**: ChromaDB
+* **Search**: Tavily API
+* **Dev Tools**: Poetry, Ruff, pre-commit, Git/GitHub
 
-- 주 언어: Python 3.11.11
-- Frontend: Streamlit (메인 UI)
-- AI/ML: LangChain, LangGraph, LangSmith
+## 📚 상세 문서 (Table of Contents)
 
-**벡터 저장소**
+* [설치 가이드](docs/1_INSTALLATION.md)
+* [사용 방법](docs/2_USAGE_GUIDE.md)
+* [시스템 아키텍처](docs/3_ARCHITECTURE.md)
+* [설정 및 커스터마이징](docs/4_CUSTOMIZATION.md)
+* [기여하기](docs/5_CONTRIBUTING.md)
+* [문제 해결 가이드](docs/6_TROUBLESHOOTING.md)
 
-- Vector DB: ChromaDB
-
-**LLM APIs**
-
-- OpenAI GPT Models
-- Upstage API
-
-**개발 도구**
-
-- 패키지 관리: Poetry
-- 버전 관리: Git, GitHub
-- 코드 품질: Ruff, Pre-commit
-- 개발 환경: JupyterLab, IPython
-
-**협업 도구**
-
-- GitHub (코드 관리, 이슈 트래킹)
-- Notion (프로젝트 문서화)
-- Slack, KakaoTalk (실시간 소통)
-
-## 📁 프로젝트 구조
+## 📁 프로젝트 구조 (Project Structure)
 
 ```
 .
-├── README.md                # 프로젝트 문서
-├── pyproject.toml          # Poetry 의존성 관리
-├── poetry.lock             # 의존성 버전 고정
-├── ruff.toml              # 코드 포맷터 설정
-├── docs/                   # 프로젝트 문서
-│   ├── imgs/              # 문서용 이미지
-│   └── project_guide.md   # 프로젝트 가이드
-├── notebooks/             # Jupyter Notebook 실험
-│   ├── psjin2024p/       # 개인 작업 공간
-│   └── yuiyeong/         # 개인 작업 공간
-├── scripts/               # 유틸리티 스크립트
-│   └── init-instance.sh  # 인스턴스 초기화
-└── src/                   # 소스 코드
-    ├── __init__.py
-    ├── main.py           # 메인 실행 파일
-    ├── config.py         # 설정 관리
-    ├── logger.py         # 로깅 모듈
-    └── ui/               # UI 관련 모듈
-        └── __init__.py
+├── configs/                  # 설정 파일
+├── data/                     # 데이터 디렉토리
+├── docs/                     # 문서/가이드
+├── logs/                     # 로그 저장소
+├── notebooks/                # Jupyter 노트북
+├── prompts/                  # 프롬프트 관리
+├── scripts/                  # 유틸리티 스크립트
+├── src/                      # 소스 코드
+│   ├── agent.py              # BlogContentAgent
+│   ├── agent_tool.py         # Tavily 웹 검색 도구
+│   ├── app.py                # Streamlit 앱 UI
+│   ├── config.py             # 중앙 설정 로직
+│   ├── document_preprocessor.py # PDF 전처리
+│   ├── logger.py             # 로깅 유틸리티
+│   ├── main.py               # Streamlit 진입점
+│   ├── retriever.py          # RetrieverFactory
+│   ├── vector_store.py       # Vector DB
+│   └── ui/                   # UI 컴포넌트
+└── 
+...
 ```
 
-## 💻 구현 기능
+## 🤝 기여하기 (Contributing)
 
-- W.I.P.
+이 프로젝트에 기여하고 싶으신가요? [기여 가이드](docs/5_CONTRIBUTING.md)를 참고하여 함께 프로젝트를 발전시켜주세요. 모든 기여를 환영합니다!
 
-## 🛠️ 작품 아키텍처
+## **👥 팀 구성원**
+| ![조의영](https://avatars.githubusercontent.com/u/4915390?v=4) | ![최웅비](https://avatars.githubusercontent.com/u/97170457?v=4) | ![고민주](https://avatars.githubusercontent.com/u/204635884?v=4) | ![박성진](https://avatars.githubusercontent.com/u/204808507?v=4) | ![조은별](https://avatars.githubusercontent.com/u/178245805?v=4) | ![김효석](https://avatars.githubusercontent.com/u/159979869?v=4) |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| [조의영](https://github.com/yuiyeong) | [최웅비](https://github.com/Wchoi189) | [고민주](https://github.com/PaperToCode) | [박성진](https://github.com/psj2024p) | [조은별](https://github.com/eunbyul2) | [김효석](https://github.com/david1005910) |
+| 팀장 | 개발자 | 개발자 | 개발자 | 개발자 | 개발자 |
 
-- W.I.P.
 
-## 🚀 Getting Started
+## 📄 라이선스 (License)
 
-### Prerequisites
-
-개발 환경을 설정하기 전에 다음 요구사항을 확인해주세요.
-
-- Python 3.11.11을 사용하기 위해서 **Anaconda** 또는 **Miniconda**가 설치되어 있어야 합니다.
-- 패키지 관리 도구인 **Poetry**가 설치되어 있어야 합니다.
-
-만약 위 사항을 만족하지 못했다면, [Prerequisites 설정](#prerequisites-설정) 부분을 먼저 확인해주세요.
-
-### 빠른 시작
-
-#### **1. Python 환경 설정**
-
-Conda를 사용하여 Python 3.11.11 환경을 생성합니다.
-
-```bash
-# Python 3.11.11 환경 생성
-conda create -n langchain-project python=3.11.11 -y
-
-# 환경 활성화
-conda activate langchain-project
-```
-
-#### **2. Repository 클론**
-
-```bash
-git clone https://github.com/AIBootcamp13/upstageailab-langchain-pjt-langchain_8.git
-
-cd upstageailab-langchain-pjt-langchain_8
-```
-
-#### **3. 의존성 설치**
-
-```bash
-poetry install --extras dev
-
-poetry run pre-commit install
-```
-
-#### **4. 환경변수 설정**
-
-API 키를 설정하기 위해 `.env` 파일을 생성합니다.
-
-```bash
-# .env.template을 복사하여 .env 파일 생성
-cp .env.template .env
-```
-
-생성된 `.env` 파일을 편집하여 실제 API 키를 입력합니다.
-
-```bash
-# 텍스트 에디터로 .env 파일 편집 (예: nano, vim, code 등)
-vi .env
-```
-
-`.env` 파일에 다음과 같이 실제 API 키를 입력합니다:
-
-```
-OPENAI_API_KEY=실제_openai_api_키를_여기에_입력
-UPSTAGE_API_KEY=실제_upstage_api_키를_여기에_입력
-```
-
-### Prerequisites 설정
-
-`Python 3.11.11`이나 `Poetry`가 설치되어 있지 않은 경우, 아래 환경별 가이드를 따라 설정해주세요.
-
-#### Upstage Cloud Instance 환경 설정
-
-터미널 또는 VS Code의 Remote SSH를 이용해 GPU 서버에 접속한 후, 다음 명령어를 실행합니다.
-
-```bash
-# 환경 설정 스크립트 다운로드 및 실행
-wget https://gist.githubusercontent.com/yuiyeong/8ae3f167e97aeff90785a4ccda41e5fe/raw/bcf100f01b69df0534841f7cb126f96d307fc460/setup_env.sh
-chmod +x setup_env.sh
-./setup_env.sh
-```
-
-> **참고**: 중간에 TimeZone 설정 입력창이 나타나면,
-> 1. `Asia` (6번) 선택
-> 2. `Seoul` (69번) 선택
-
-##### _VS Code Remote SSH 사용 시 추가 설정_
-
-VS Code Remote SSH를 사용한 경우, 환경 설정 스크립트 실행 후 다음 명령어를 **한 번만** 실행해주세요.
-
-```bash
-pkill -f vscode-server
-```
-
-> **주의**: 위 명령어 실행 후 연결 끊김 에러가 발생할 수 있습니다. 이는 정상적인 과정이므로,
-> 1. 에러 팝업을 닫습니다.
-> 2. 모든 VS Code 창을 종료합니다.
-> 3. VS Code를 다시 실행합니다.
-
-#### 로컬 개발 환경 설정
-
-##### 1. Anaconda/Miniconda 설치
-
-- **Anaconda**가 이미 설치되어 있다면, 2번을 진행해주세요.
-
-운영체제별로 [Anaconda 공식 설치 문서](https://docs.anaconda.com/anaconda/install/)를 참고하여 Anaconda 또는 Miniconda를 설치해주세요.
-
-- **Windows**: [Windows 설치 가이드](https://docs.anaconda.com/anaconda/install/windows/)
-- **macOS**: [macOS 설치 가이드](https://docs.anaconda.com/anaconda/install/mac-os/)
-- **Linux**: [Linux 설치 가이드](https://docs.anaconda.com/anaconda/install/linux/)
-
-##### 2. Python 3.11.11 환경 생성
-
-Conda를 사용하여 Python 3.11.11 환경을 생성합니다.
-
-```bash
-# Python 3.11.11 환경 생성
-conda create -n langchain-project python=3.11.11 -y
-
-# 환경 활성화
-conda activate langchain-project
-
-# Python 버전 확인
-python --version
-```
-
-##### 3. Poetry 설치
-
-[Poetry 공식 설치 문서](https://python-poetry.org/docs/#installation)를 참고하여 Poetry를 설치해주세요.
-
-**권장 설치 방법 (모든 운영체제 공통)**
-
-```bash
-curl -sSL https://install.python-poetry.org | python3 -
-```
-
-**Windows (PowerShell)**
-
-```powershell
-(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
-```
-
-설치 후 터미널을 재시작하고 확인
-
-```bash
-poetry --version
-```
-
-> **참고**: Poetry가 PATH에 추가되지 않은 경우, [공식 문서의 PATH 설정 가이드](https://python-poetry.org/docs/#add-poetry-to-your-path)를
-> 참고해주세요.
-
-## 📢 Git 사용 규칙
-
-본 프로젝트는 **GitHub Flow**를 채택하여 간단하고 효율적인 협업을 진행합니다.
-
-### GitHub Flow 작업 프로세스
-
-```mermaid
-flowchart LR
-    subgraph GitHub["☁️ GitHub (원격 저장소)"]
-        Issue[["📋 Issue 생성<br/>작업 내용 정의"]]
-        PR[["🔀 Pull Request 생성<br/>코드 병합 요청"]]
-        Review[["👀 Code Review<br/>팀원 리뷰 진행"]]
-        Approve{리뷰 결과}
-        Merge[["✅ Merge to main<br/>메인 브랜치 병합"]]
-        Close[["📌 Close Issue<br/>이슈 완료 처리"]]
-    end
-
-    subgraph Local["💻 Local Git (개발 환경)"]
-        Pull[["git pull origin main<br/>최신 코드 동기화"]]
-        Branch[["git branch feature/#이슈번호<br/>feature 브랜치 생성"]]
-        Switch[["git switch feature/#이슈번호<br/>브랜치 전환"]]
-        Code[["⌨️ 코드 작성<br/>기능 개발"]]
-        Status[["git status<br/>변경사항 확인"]]
-        Add[["git add .<br/>스테이징"]]
-        Commit[["git commit -m 'prefix: #이슈번호 메시지'<br/>커밋 생성"]]
-        Push[["git push origin feature/#이슈번호<br/>원격에 푸시"]]
-        Delete[["git branch -d feature/#이슈번호<br/>로컬 브랜치 삭제"]]
-    end
-
-    Start([프로젝트 시작]) --> Issue
-    Issue --> Pull
-    Pull --> Branch
-    Branch --> Switch
-    Switch --> Code
-    Code --> Status
-    Status --> Add
-    Add --> Commit
-    Commit --> Push
-    Push -.->|브라우저에서 작업| PR
-    PR --> Review
-    Review --> Approve
-    Approve -->|수정 요청| Code
-    Approve -->|승인| Merge
-    Merge --> Close
-    Close --> Delete
-    Delete --> End([작업 완료])
-    style Start fill: #e1f5e1
-    style End fill: #e1f5e1
-    style Issue fill: #fff3cd
-    style PR fill: #fff3cd
-    style Review fill: #cfe2ff
-    style Merge fill: #d1f2eb
-    style Code fill: #ffe6e6
-```
-
-### 작업 시작 전 체크리스트
-
-- [ ] GitHub에서 Issue가 생성되었는가?
-- [ ] Issue가 나에게 할당되었는가?
-- [ ] 작업 내용과 완료 조건이 명확한가?
-
-### Git 명령어 순서
-
-```bash
-# 1. GitHub에서 Issue 생성 및 번호 확인 (#12)
-
-# 2. 최신 main 브랜치에서 시작
-git switch main
-git pull origin main
-
-# 3. Issue 번호를 포함한 feature 브랜치 생성
-git branch feature/12-add-rag-module
-git switch feature/12-add-rag-module
-
-# 4. 개발 작업 진행
-# ... 코드 작성 ...
-
-# 5. 변경사항 확인 및 커밋
-git status
-git add .
-git commit -m "feat: #12 RAG 모듈 기본 구조 구현"
-
-# 6. 원격 저장소에 푸시
-git push origin feature/12-add-rag-module
-
-# 7. GitHub에서 Pull Request 생성
-# 8. 코드 리뷰 및 병합 후 로컬 브랜치 삭제
-git switch main
-git pull origin main
-git branch -d feature/12-add-rag-module
-```
-
-### Branch 네이밍 규칙
-
-GitHub Flow는 단순한 브랜치 전략을 사용합니다. `main` 브랜치는 항상 배포 가능한 상태를 유지하며, 모든 기능은 별도의 feature 브랜치에서 개발합니다.
-
-| 브랜치 타입      | 네이밍 규칙                 | 예시                      |
-|-------------|------------------------|-------------------------|
-| **feature** | `feature/[이슈번호]-[기능명]` | `feature/12-login-page` |
-| **fix**     | `fix/[이슈번호]-[버그명]`     | `fix/23-api-error`      |
-| **docs**    | `docs/[이슈번호]-[문서명]`    | `docs/5-readme-update`  |
-
-### Commit Message 컨벤션
-
-모든 커밋 메시지는 다음 형식을 따릅니다: `prefix: #이슈번호 설명`
-
-#### 작성 규칙
-
-1. **제목은 명령문으로 작성** (예: "추가한다" ❌ → "추가" ⭕)
-2. **첫 글자는 대문자로** (예: "add feature" ❌ → "Add feature" ⭕)
-3. **Issue 번호 포함** (예: `feat: #12 Add RAG module`)
-
-#### Prefix 종류
-
-| Prefix     | 용도                  | 예시                                       |
-|------------|---------------------|------------------------------------------|
-| `feat`     | 새로운 기능 추가           | `feat: #12 Add RAG search functionality` |
-| `fix`      | 버그 수정               | `fix: #23 Resolve API timeout error`     |
-| `docs`     | 문서 수정               | `docs: #5 Update installation guide`     |
-| `style`    | 코드 스타일 변경 (기능 변경 X) | `style: #8 Format code with black`       |
-| `refactor` | 코드 리팩토링             | `refactor: #15 Restructure LLM module`   |
-| `test`     | 테스트 추가/수정           | `test: #18 Add unit tests for retriever` |
-| `chore`    | 기타 변경사항             | `chore: #20 Update dependencies`         |
-
-### Pull Request 규칙
-
-GitHub Flow 의 핵심은 Pull Request를 통한 코드 리뷰입니다.
-
-#### PR 생성 시 필수사항
-
-> Template 으로 아래 내용이 작성됩니다.
-
-- **본문 포함 내용**
-    - 주요 변경사항 목록
-    - 테스트 방법
-- **연결**: Issue와 연결 (`Closes #12` 또는 `Fixes #12`)
-- **리뷰어**: 반드시 1명 지정
-- **Labels**: 작업 유형에 맞는 라벨 추가
-
-#### 머지 조건
-
-- ✅ 최소 1명의 리뷰어 승인
-- ✅ 모든 conversation resolved
-- ✅ CI/CD 체크 통과 (설정된 경우)
-- ✅ main 브랜치와 충돌 없음
-
-### ⚠️ 주의사항
-
-- **절대 main 브랜치에 직접 push 금지**
-- 작업 시작 전 항상 최신 main 브랜치를 pull
-- 커밋은 작은 단위로 자주 수행
-- PR은 리뷰 가능한 크기로 유지 (최대 500줄 권장)
-
-## 🚨 트러블 슈팅
-
-- W.I.P.
-
-## 📌 프로젝트 회고
-
-- W.I.P.
-
-## 📰 참고자료
-
-- [Poetry](https://python-poetry.org/docs/)
-- [Ruff](https://docs.astral.sh/ruff/)
-- [Pre-commit](https://pre-commit.com/)
-- [LangChain Documentation](https://python.langchain.com/docs/introduction/)
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Streamlit Documentation](https://docs.streamlit.io/get-started)
-- [OpenAI API Documentation](https://platform.openai.com/docs/overview)
-- [Upstage Solar API](https://console.upstage.ai/docs/getting-started)
+이 프로젝트는 MIT 라이선스 하에 배포됩니다.

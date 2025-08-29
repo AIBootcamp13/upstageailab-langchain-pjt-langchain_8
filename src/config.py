@@ -92,3 +92,20 @@ SEARCH_KWARGS = VECTOR_STORE_CONFIG.get("search_kwargs", {"k": 5})
 # 프롬프트 설정
 DRAFT_PROMPT_TEMPLATE = PROMPTS.get("draft_prompt", "")
 UPDATE_PROMPT_TEMPLATE = PROMPTS.get("update_prompt", "")
+
+# --- 에이전트 설정 ---
+AGENT_CONFIG = CONFIG.get("agent", {})
+TAVILY_CONFIG = AGENT_CONFIG.get("tavily", {})
+TAVILY_MAX_RESULTS = TAVILY_CONFIG.get("max_results", 3)
+TAVILY_SIMILARITY_THRESHOLD = TAVILY_CONFIG.get("similarity_threshold", 0.9)
+
+RETRIEVER_TOOL_CONFIG = AGENT_CONFIG.get("retriever_tool", {})
+RETRIEVER_TOOL_NAME = RETRIEVER_TOOL_CONFIG.get("name", "document_search")
+RETRIEVER_TOOL_DESCRIPTION = RETRIEVER_TOOL_CONFIG.get("description", "Document retriever tool")
+MAX_HISTORY_MESSAGES = AGENT_CONFIG.get("max_history_messages", 50)
+HISTORY_TOKEN_LIMIT = AGENT_CONFIG.get("history_token_limit", 3000)
+HISTORY_STRATEGY = AGENT_CONFIG.get("history_strategy", "truncate")
+
+# LLM specific agent config
+AGENT_LLM_CONFIG = AGENT_CONFIG.get("llm", {})
+AGENT_LLM_MAX_TOKENS = AGENT_LLM_CONFIG.get("max_tokens", None)

@@ -16,7 +16,7 @@ profiles:
   high_gpu:
     # 로컬에서 실행되는 오픈소스 모델
     embedding_provider: "huggingface"
-    embedding_model: "BAAI/bge-m3" # HuggingFace 로컬 모델
+    embedding_model: "sentence-transformers/all-MiniLM-L6-v2" # Smaller, faster model for debugging
     llm_provider: "ollama"
     llm_model: "gpt-oss:20b" # Ollama 로컬 모델 (gpt-oss:20b,gemma3:4b,etc)
 
@@ -43,6 +43,31 @@ vector_store:
   # 검색 관련 인자 (k: 반환할 문서 수)
   search_kwargs:
     k: 5
+
+
+# --- 에이전트 관련 설정 ---
+agent:
+  tavily:
+    # Tavily 검색 도구가 반환할 최대 결과 수
+    max_results: 3
+    # 쿼리 캐시에서 두 쿼리를 유사하다고 판단하는 임계값
+    similarity_threshold: 0.9
+
+  retriever_tool:
+    # retriever 도구의 이름과 설명 (코드 내에서 사용될 문자열)
+    name: "document_search"
+    description: "업로드된 PDF 문서에서 정보를 검색하고 반환합니다. 문서 내용에 대한 질문에 답할 때 사용하세요."
+  # 대화 기록(세션)에서 유지할 최대 메시지 수
+  max_history_messages: 50
+  # 히스토리 토큰 제한 (전체 대화 기록이 이 토큰 수를 넘으면 전략에 따라 정리됩니다)
+  history_token_limit: 3000
+  # 히스토리 처리 전략: 'truncate' (메시지 삭제), 'compress' (오래된 메시지를 요약/압축)
+  history_strategy: "compress"
+
+  # LLM 관련 추가 설정
+  llm:
+    # 모델에 전달할 max_tokens (생성 길이 제한). None이면 공급자 기본값 사용.
+    max_tokens: 512
 
 
 # --- ADD DEPENDENCIES ---

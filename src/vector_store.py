@@ -41,9 +41,4 @@ class VectorStore:
 
     def as_retriever(self, **kwargs):
         """벡터 스토어를 LangChain Retriever로 변환합니다."""
-        from src.config import SEARCH_TYPE, SEARCH_KWARGS # 순환 참조 방지를 위해 늦게 import
-        
-        # 검색 관련 설정을 config 파일에서 읽어와 적용합니다.
-        search_kwargs = kwargs.copy()
-        search_kwargs.update(SEARCH_KWARGS)
-        return self.store.as_retriever(search_type=SEARCH_TYPE, search_kwargs=search_kwargs)
+        return self.store.as_retriever(**kwargs)

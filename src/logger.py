@@ -39,8 +39,7 @@ class JsonFormatter(logging.Formatter):
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
 
-    # ensure_ascii=False keeps Unicode characters (e.g., Korean) readable in logs
-    return json.dumps(log_data, ensure_ascii=False)
+        return json.dumps(log_data)
 
 
 def get_logger(logger_name: str) -> logging.Logger:

@@ -36,7 +36,6 @@ class ContentsEditor:
             self._generate_draft_with_progress(agent, session_id)
             return False
 
-        # Use a two-column layout with a small spacer
         draft_col, _, chat_col = st.columns([52, 1, 46])
 
         with draft_col:
@@ -94,7 +93,9 @@ class ContentsEditor:
 
             chat_container = st.container(height=625)
             with chat_container:
-                chat_history = agent.get_session_history(session_id).messages
+                # --- FIX: Use the new .get_messages() method for safety ---
+                # This ensures compatibility with our new custom history object.
+                chat_history = agent.get_session_history(session_id).get_messages()
                 for msg in chat_history:
                     role = Message.ROLE_USER if msg.type == "human" else Message.ROLE_ASSISTANT
                     with st.chat_message(role):

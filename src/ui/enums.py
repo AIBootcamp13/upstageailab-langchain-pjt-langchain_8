@@ -5,6 +5,8 @@ class SessionKey(str, Enum):
     GITHUB_CLIENT = "github_client"
     GITHUB_PAT = "github_pat"
     GITHUB_REPO = "github_repo"
+    # --- ADDED: Key to store the authenticated user's name ---
+    GITHUB_USERNAME = "github_username"
 
     CURRENT_STAGE = "current_stage"
 
