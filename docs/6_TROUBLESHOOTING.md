@@ -73,4 +73,4 @@
 * **Q: PDF 외에 다른 파일(예: DOCX, PPTX)도 사용할 수 있나요?**  
   * A: 현재 버전은 PDF 파일만 공식적으로 지원합니다. 다른 파일 형식을 지원하려면 src/document_preprocessor.py에 해당 파일에 맞는 LangChain 로더를 추가해야 합니다.  
 * **Q: AI의 글쓰기 스타일을 바꾸고 싶습니다.**  
-  * A: prompts/prompts.yaml 파일의 draft_prompt에 있는 [Identity]와 [Instructions] 부분을 수정하여 AI의 역할과 작업 방식을 변경할 수 있습니다. 자세한 내용은 [설정 및 커스터마이징 가이드](https://www.google.com/search?q=./4_CUSTOMIZATION.md)를 참고하세요.
+  * A: prompts/prompts.yaml 파일의 draft_prompt에 있는 [Identity]와 [Instructions] 부분을 수정하여 AI의 역할과 작업 방식을 변경할 수 있습니다. 자세한 내용은 [설정 및 커스터마이징 가이드](4_CUSTOMIZATION.md)를 참고하세요.
