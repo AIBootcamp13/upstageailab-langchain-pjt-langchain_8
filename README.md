@@ -72,25 +72,41 @@ PPT나 문서 자료를 입력받아 고품질 블로그 포스트를 자동 생
 
 ```
 .
-├── README.md                # 프로젝트 문서
-├── pyproject.toml          # Poetry 의존성 관리
-├── poetry.lock             # 의존성 버전 고정
-├── ruff.toml              # 코드 포맷터 설정
-├── docs/                   # 프로젝트 문서
-│   ├── imgs/              # 문서용 이미지
-│   └── project_guide.md   # 프로젝트 가이드
-├── notebooks/             # Jupyter Notebook 실험
-│   ├── psjin2024p/       # 개인 작업 공간
-│   └── yuiyeong/         # 개인 작업 공간
-├── scripts/               # 유틸리티 스크립트
-│   └── init-instance.sh  # 인스턴스 초기화
-└── src/                   # 소스 코드
-    ├── __init__.py
-    ├── main.py           # 메인 실행 파일
-    ├── config.py         # 설정 관리
-    ├── logger.py         # 로깅 모듈
-    └── ui/               # UI 관련 모듈
-        └── __init__.py
+├── configs/                  # 설정 파일
+│   └── pconfig.yaml
+├── data/                     # 데이터 디렉토리
+├── docs/                     # 문서/가이드
+├── logs/                     # 로그 저장소
+├── notebooks/                # Jupyter/Colab 노트북
+├── prompts/                  # 프롬프트 관리
+│   ├── multiple-prompts.yaml           
+│   └── prompts.yaml              
+├── scripts/                  # 유틸리티 스크립트
+├── src/                      # 소스 코드
+│   ├── agent.py              # BlogContentAgent (Tool-Calling 에이전트)
+│   ├── agent_tool.py         # Tavily web_search Tool
+│   ├── app.py                # Streamlit 앱 실행 UI
+│   ├── config.py             # 중앙 설정 로직
+│   ├── document_preprocessor.py # PDF 전처리 (청킹, OCR, API 파서)
+│   ├── logger.py             # JSON 기반 로깅 유틸
+│   ├── main.py               # Streamlit 실행 entrypoint
+│   ├── retriever.py          # RetrieverFactory (VectorStore → Retriever)
+│   ├── vector_store.py       # Vector DB (Chroma + Embeddings)
+│   └── ui/                   # Streamlit UI 컴포넌트
+│       ├── enums.py
+│       └── components/
+│           ├── contents_editor.py # 초안 생성/수정 UI
+│           ├── file_uploader.py   # PDF 업로드 UI
+│           ├── github_auth.py     # GitHub 인증 UI
+│           └── publisher.py       # 발행 UI
+├── .env.template             # 환경 변수 템플릿
+├── .gitignore
+├── .pre-commit-config.yaml
+├── poetry.lock
+├── pyproject.toml            # Poetry 환경 관리
+├── README.md
+└── ruff.toml                 # Lint 설정
+
 ```
 
 ## 💻 구현 기능
