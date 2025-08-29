@@ -49,8 +49,8 @@ class ContentsEditor:
         if SessionKey.BLOG_DRAFT not in st.session_state:
             st.session_state[SessionKey.BLOG_DRAFT] = None
 
-        if "user_request" not in st.session_state:
-            st.session_state["user_request"] = None
+        if SessionKey.SESSION_ID not in st.session_state:
+            self.session_id = str(uuid.uuid4())
 
     @property
     def message_list(self) -> list[Message]:
@@ -89,11 +89,8 @@ class ContentsEditor:
         st.subheader("초안 생성 및 퇴고")
 
         agent = self._initialize_agent()
-        session_id = st.session_state.session_id
 
-        if SessionKey.BLOG_DRAFT not in st.session_state:
-            self._generate_draft_with_progress(agent, session_id)
-            return False
+        self._generate_draft_with_progress(agent)
 
         # Use a two-column layout with a small spacer
         draft_col, _, chat_col = st.columns([52, 1, 46])
@@ -102,7 +99,7 @@ class ContentsEditor:
             self._render_draft_preview()
 
         with chat_col:
-            self._render_chat(agent, session_id)
+            self._render_chat(agent)
 
         if st.button("발행 단계로 이동"):
             self.finalize_draft()
@@ -117,9 +114,6 @@ class ContentsEditor:
         if SessionKey.RETRIEVER not in st.session_state:
             raise RuntimeError("먼저 파일을 업로드하여 Retriever를 초기화해야 합니다.")
 
-        if SessionKey.SESSION_ID not in st.session_state:
-            self.session_id = str(uuid.uuid4())
-
         if SessionKey.BLOG_CREATOR_AGENT not in st.session_state:
             retriever = st.session_state[SessionKey.RETRIEVER]
             vector_store: VectorStore = st.session_state[SessionKey.VECTOR_STORE]
@@ -129,14 +123,14 @@ class ContentsEditor:
 
         return st.session_state[SessionKey.BLOG_CREATOR_AGENT]
 
-    def _generate_draft_with_progress(self, agent: BlogContentAgent, session_id: str):
+    def _generate_draft_with_progress(self, agent: BlogContentAgent):
         """초안이 없으면 초안을 생성하고, 있다면 그 값을 반환"""
         if self.draft:
             return
 
         model_name = agent.llm.model_name if hasattr(agent.llm, "model_name") else agent.llm.model
         with st.status(f"💬 초안 생성 중... (LLM: '{model_name}')", expanded=True) as status:
-            self.draft = agent.generate_draft(session_id)
+            self.draft = agent.generate_draft(self.session_id)
             status.update(label="✅ 블로그 포스트 초안 생성 완료!", state="complete", expanded=False)
 
     def _render_draft_preview(self):
@@ -151,14 +145,14 @@ class ContentsEditor:
             with markdown_tab:
                 st.code(self.draft, language="markdown")
 
-    def _render_chat(self, agent: BlogContentAgent, session_id: str):
+    def _render_chat(self, agent: BlogContentAgent):
         """Renders the chat panel within a bordered container."""
         with st.container(height=750, border=True):
             st.markdown("##### **수정 및 대화**")
 
             chat_container = st.container(height=625)
             with chat_container:
-                chat_history = agent.get_session_history(session_id).messages
+                chat_history = agent.get_session_history(self.session_id).messages
                 for msg in chat_history:
                     role = Message.ROLE_USER if msg.type == "human" else Message.ROLE_ASSISTANT
                     with st.chat_message(role):
@@ -166,7 +160,7 @@ class ContentsEditor:
                         st.markdown(content_to_display)
 
             if user_request := st.chat_input("수정하고 싶은 내용을 입력하세요..."):
-                self._handle_user_prompt(agent, user_request, session_id)
+                self._handle_user_prompt(agent, user_request)
 
     def _parse_ai_message(self, content: str, role: str) -> str:
         """Parses the AI's message content to decide what to display."""
@@ -180,10 +174,10 @@ class ContentsEditor:
         except (json.JSONDecodeError, TypeError):
             return content
 
-    def _handle_user_prompt(self, agent: BlogContentAgent, prompt: str, session_id: str):
+    def _handle_user_prompt(self, agent: BlogContentAgent, prompt: str):
         """Handles user input by calling the agent and updating the state."""
         with st.spinner("⏳ 수정 사항 반영 중..."):
-            response_data = agent.update_blog_post(prompt, session_id)
+            response_data = agent.update_blog_post(prompt, self.session_id)
 
             if response_data.get("type") == "draft":
                 self.draft = response_data.get("content")
