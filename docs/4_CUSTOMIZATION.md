@@ -22,6 +22,7 @@ ENV_PROFILE=high_gpu poetry run streamlit run src/main.py
 
 profiles 섹션에서 사용할 LLM과 임베딩 모델을 변경할 수 있습니다.
 
+```yaml
 # configs/config.yaml
 
 profiles:  
@@ -36,11 +37,12 @@ profiles:
     embedding_model: "BAAI/bge-m3" # 다른 HuggingFace 모델로 변경 가능  
     llm_provider: "ollama"  
     llm_model: "llama3:8b" # 설치된 다른 Ollama 모델로 변경 가능
-
+```
 ### **1.3 데이터 처리 방식 변경**
 
 ingestion 섹션에서 PDF 파서와 텍스트 분할 방식을 제어할 수 있습니다.
 
+```yaml
 # configs/config.yaml
 
 ingestion:  
@@ -52,6 +54,7 @@ ingestion:
     chunk_size: 1024  
     # 청크 간 중첩되는 글자 수  
     chunk_overlap: 256
+```
 
 * **parser**: 문서 처리 성능이나 정확도에 따라 파서를 변경할 수 있습니다. 예를 들어, 복잡한 표나 이미지가 포함된 PDF는 "unstructured"가 더 나은 결과를 보일 수 있습니다.  
 * **chunk_size / chunk_overlap**: 이 값을 조정하면 RAG의 검색 정확도와 컨텍스트의 양에 영향을 미칩니다. 문서의 종류에 따라 최적의 값을 찾아 조정할 수 있습니다.
@@ -66,6 +69,7 @@ ingestion:
 
 **기본 프롬프트:**
 
+```yaml
 # prompts/prompts.yaml
 
 draft_prompt: |  
@@ -79,9 +83,11 @@ draft_prompt: |
   [Instructions]  
   1. 자료의 핵심 내용을 파악하여 적절한 제목을 만드세요.  
   ...
+```
 
 **커스터마이징 예시 (학습 노트 스타일로 변경):**
 
+```yaml
 # prompts/prompts.yaml
 
 draft_prompt: |  
@@ -97,6 +103,7 @@ draft_prompt: |
   2. 서론, 본론, 결론 구조로 명확하게 내용을 구성해주세요.  
   3. 어려운 용어는 쉽게 풀어서 설명하고, 예시를 포함해주세요.  
   4. 마지막에는 핵심 내용을 요약하는 섹션을 반드시 추가해주세요.
+```
 
 ### **2.2 대화형 수정 프롬프트 (update_prompt)**
 
@@ -104,6 +111,7 @@ draft_prompt: |
 
 **기본 프롬프트:**
 
+```yaml
 # prompts/prompts.yaml
 
 update_prompt: |  
@@ -114,5 +122,6 @@ update_prompt: |
   1. **채팅 응답 (type: "chat")**: 단순한 질문에 답하거나, 요청을 수행할 수 없을 때 사용합니다.  
   2. **초안 수정 (type: "draft")**: 사용자의 요청을 반영하여 블로그 초안 전체를 수정할 때 사용합니다.  
   ...
+```
 
 이 프롬프트를 수정하여 에이전트의 응답 톤을 바꾸거나, 특정 규칙(예: "항상 존댓말 사용")을 추가할 수 있습니다. 하지만 JSON 응답 형식과 관련된 지시문은 UI와 직접적으로 연결되어 있으므로, 구조를 변경할 때는 주의가 필요합니다.

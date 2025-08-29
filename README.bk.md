@@ -123,12 +123,21 @@ PPT나 문서 자료를 입력받아 고품질 블로그 포스트를 자동 생
 
 ### 3. 에이전트 및 툴 통합 (agent.py, agent_tool.py)
 - **BlogContentAgent**
+<<<<<<< HEAD
 - LLM(OpenAI/Ollama) 초기화, 문서 기반 초안 생성 체인 구축
 - Retriever Tool + Tavily Web Search Tool 결합한 Tool-Calling Agent 실행
 - 세션 단위로 채팅 기록 저장, 초안 생성(generate_draft), 수정 요청(update_blog_post) 처리
 
 - **Web Search Tool (agent_tool.py)**
 - Tavily API 기반 검색 도구, JSON 형식으로 결과 정규화
+=======
+>- LLM(OpenAI/Ollama) 초기화, 문서 기반 초안 생성 체인 구축
+>- Retriever Tool + Tavily Web Search Tool 결합한 Tool-Calling Agent 실행
+>- 세션 단위로 채팅 기록 저장, 초안 생성(generate_draft), 수정 요청(update_blog_post) 처리
+
+- **Web Search Tool (agent_tool.py)**
+>- Tavily API 기반 검색 도구, JSON 형식으로 결과 정규화
+>>>>>>> 770e4e58e43834321f4f07f6732821af357b9c6a
 
 ### 4. UI 컴포넌트 (ui/components/…)
 **1. 인증 (github_auth.py)**
@@ -155,6 +164,7 @@ PPT나 문서 자료를 입력받아 고품질 블로그 포스트를 자동 생
 ### 7.전체 플로우 (PDF 참조)
 - 사용자 여정: GitHub 인증 → 파일 업로드 → 초안 생성/퇴고 → 발행
 - UI ↔ RAG 연결:
+<<<<<<< HEAD
 - FileUploader → DocumentPreprocessor → VectorStore → Retriever
 - ContentsEditor → BlogContentAgent (Retriever+Tavily) → Draft/Update
 - Publisher → GitHub Repo 업로드 → Pages 발행
@@ -194,6 +204,15 @@ graph TD
     end 
 ``` 
 
+=======
+>- FileUploader → DocumentPreprocessor → VectorStore → Retriever
+>- ContentsEditor → BlogContentAgent (Retriever+Tavily) → Draft/Update
+>- Publisher → GitHub Repo 업로드 → Pages 발행
+
+## 🛠️ 작품 아키텍처
+
+- W.I.P.
+>>>>>>> 770e4e58e43834321f4f07f6732821af357b9c6a
 
 ## 🚀 Getting Started
 
@@ -498,6 +517,7 @@ GitHub Flow 의 핵심은 Pull Request를 통한 코드 리뷰입니다.
 
 ## 🚨 트러블 슈팅
 
+<<<<<<< HEAD
 애플리케이션 실행 중 문제가 발생했을 때 다음 가이드를 참고하세요.
 
 ### ⚙️ 환경 설정 및 실행 문제
@@ -539,6 +559,9 @@ GitHub Flow 의 핵심은 Pull Request를 통한 코드 리뷰입니다.
 -   **해결책**:
     1.  `src/agent.py`에 구현된 `CachedTavilySearchTool`이 정상적으로 동작하는지 확인하세요. 이 클래스는 유사도(similarity)를 기반으로 중복 검색을 방지하는 캐싱 기능을 제공합니다.
     2.  `prompts/prompts.yaml`의 `update_prompt`에 "대화 기록을 먼저 확인하고, 이미 찾은 정보는 다시 검색하지 말 것"이라는 규칙을 추가하여 에이전트의 행동을 제어할 수 있습니다.
+=======
+- W.I.P.
+>>>>>>> 770e4e58e43834321f4f07f6732821af357b9c6a
 
 ## 📌 프로젝트 회고
 
