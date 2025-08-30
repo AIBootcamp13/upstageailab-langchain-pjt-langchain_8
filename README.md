@@ -111,7 +111,7 @@ graph TD
 
 1.  **Repository 클론**
     ```bash
-    git clone [https://github.com/AIBootcamp13/upstageailab-langchain-pjt-langchain_8.git](https://github.com/AIBootcamp13/upstageailab-langchain-pjt-langchain_8.git)
+    git clone https://github.com/AIBootcamp13/upstageailab-langchain-pjt-langchain_8.git
     cd upstageailab-langchain-pjt-langchain_8
     ```
 2.  **의존성 설치**
