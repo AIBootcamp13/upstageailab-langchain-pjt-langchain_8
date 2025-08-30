@@ -24,6 +24,14 @@ profiles:
 app:
   # 시간대 설정: UTC 또는 로컬 시간대 (예: "Asia/Seoul", "America/New_York")
   timezone: "UTC"
+  # 프로젝트 루트 마커 파일
+  root_marker: "pyproject.toml"
+  # 기본 환경 프로필
+  default_profile: "default_cpu"
+  # 디렉토리 설정
+  directories:
+    logs: "logs"
+    data: "data"
 
 # --- 데이터 수집 (Ingestion) 설정 ---
 ingestion:
@@ -75,10 +83,39 @@ agent:
     max_tokens: 512
 
 
-# --- ADD DEPENDENCIES ---
+# --- 기본값 설정 (Defaults) ---
+defaults:
+  # 텍스트 분할 기본값
+  text_splitter:
+    chunk_size: 1024
+    chunk_overlap: 256
+
+  # 벡터 저장소 기본값
+  vector_store:
+    collection_name: "default_collection"
+    search_type: "similarity"
+    search_kwargs:
+      k: 5
+
+  # 에이전트 기본값
+  agent:
+    tavily:
+      max_results: 3
+      similarity_threshold: 0.9
+    retriever_tool:
+      name: "document_search"
+      description: "Document retriever tool"
+    max_history_messages: 50
+    history_token_limit: 3000
+    history_strategy: "truncate"
+    llm:
+      max_tokens: null
 # In your pyproject.toml, add the following:
 # "pyyaml"
 # "pymupdf"
 # "langchain-huggingface"
 # "sentence-transformers"
 # "langchain-upstage"
+
+# Quick Debug Commands
+# pkill -f 'streamlit run' || true; sleep 1; poetry run streamlit run src/app.py --logger.level=debug

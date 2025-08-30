@@ -76,7 +76,8 @@ class ContentsEditor:
 
     def _render_draft_preview(self):
         """Renders the draft preview and markdown tabs within a bordered container."""
-        with st.container(height=750, border=True):
+        # --- UI CHANGE: Increased container height for more vertical space ---
+        with st.container(height=900, border=True):
             st.markdown("##### **블로그 초안**")
             preview_tab, markdown_tab = st.tabs(["🖼️ Preview", "👨‍💻 Markdown"])
 
@@ -88,10 +89,12 @@ class ContentsEditor:
 
     def _render_chat(self, agent: BlogContentAgent, session_id: str):
         """Renders the chat panel within a bordered container."""
-        with st.container(height=750, border=True):
+        # --- UI CHANGE: Increased container height for more vertical space ---
+        with st.container(height=900, border=True):
             st.markdown("##### **수정 및 대화**")
 
-            chat_container = st.container(height=625)
+            # --- UI CHANGE: Increased chat container height ---
+            chat_container = st.container(height=850)
             with chat_container:
                 # --- FIX: Use the new .get_messages() method for safety ---
                 # This ensures compatibility with our new custom history object.
@@ -132,3 +135,4 @@ class ContentsEditor:
     def finalize_draft(self):
         """Saves the final draft to the session state for the publishing stage."""
         st.session_state[SessionKey.BLOG_POST] = st.session_state.get(SessionKey.BLOG_DRAFT)
+
