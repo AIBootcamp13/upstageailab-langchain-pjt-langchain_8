@@ -8,7 +8,18 @@ from dotenv import load_dotenv
 
 # --- 초기 설정 ---
 load_dotenv() # .env 파일에서 환경 변수를 로드합니다.
-TIMEZONE: ZoneInfo = ZoneInfo("Asia/Seoul")
+
+# --- 핵심 설정 로딩 ---
+ROOT_DIR = find_project_root()
+CONFIG_FILE = ROOT_DIR / "configs" / "config.yaml"
+PROMPTS_FILE = ROOT_DIR / "prompts" / "prompts.yaml"
+
+CONFIG = load_yaml(CONFIG_FILE)
+PROMPTS = load_yaml(PROMPTS_FILE)
+
+# 시간대 설정: YAML에서 읽어옴 (기본값: UTC)
+TIMEZONE_STR = CONFIG.get("app", {}).get("timezone", "UTC")
+TIMEZONE: ZoneInfo = ZoneInfo(TIMEZONE_STR)
 _ROOT_MARKER = "pyproject.toml"
 
 # --- 경로 함수 ---

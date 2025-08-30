@@ -20,6 +20,11 @@ profiles:
     llm_provider: "ollama"
     llm_model: "gpt-oss:20b" # Ollama 로컬 모델 (gpt-oss:20b,gemma3:4b,etc)
 
+# --- 애플리케이션 설정 (Application Settings) ---
+app:
+  # 시간대 설정: UTC 또는 로컬 시간대 (예: "Asia/Seoul", "America/New_York")
+  timezone: "UTC"
+
 # --- 데이터 수집 (Ingestion) 설정 ---
 ingestion:
   # PDF 파서(parser) 선택: "local" 또는 "api" 또는 "unstructured"
