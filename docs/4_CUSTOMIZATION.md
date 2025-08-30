@@ -15,10 +15,13 @@
 
 **프로필 변경 방법 (터미널):**
 
-# high_gpu 프로필로 애플리케이션 실행
+# high_gpu 프로필로 애플리케이션 실행 (Linux/macOS)
 ```bash  
 ENV_PROFILE=high_gpu poetry run streamlit run src/main.py
 ```
+
+> **다른 운영체제에서의 사용법:**  
+> Windows CMD, PowerShell 등 다른 운영체제에서 환경 변수 설정 방법은 [문제 해결 가이드의 FAQ](6_TROUBLESHOOTING.md#4-자주-묻는-질문-faq)를 참고하세요.
 ### **1.2 모델 변경**
 
 profiles 섹션에서 사용할 LLM과 임베딩 모델을 변경할 수 있습니다.
