@@ -94,7 +94,7 @@ class ContentsEditor:
             st.markdown("##### **수정 및 대화**")
 
             # --- UI CHANGE: Increased chat container height ---
-            chat_container = st.container(height=850)
+            chat_container = st.container(height=740)
             with chat_container:
                 # --- FIX: Use the new .get_messages() method for safety ---
                 # This ensures compatibility with our new custom history object.
