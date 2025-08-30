@@ -70,6 +70,31 @@
 
 ## **4. 자주 묻는 질문 (FAQ)**
 
+### **환경 프로필 커맨드 사용 방법 (ENV_PROFILE=high_gpu)**
+
+* **Q: 환경 프로필을 변경하는 커맨드가 운영체제마다 다른가요?**  
+  * A: 네, 환경 변수 설정 방식이 운영체제마다 다릅니다. 다음 표를 참고하여 본인의 운영체제에 맞는 명령어를 사용하세요.
+
+| 운영체제           | 사용 예시                                                         |
+|------------------|-------------------------------------------------------------------|
+| Linux/macOS      | `ENV_PROFILE=high_gpu poetry run streamlit run src/main.py`       |
+| Windows CMD      | `set ENV_PROFILE=high_gpu && poetry run streamlit run src/main.py`|
+| Windows PowerShell | `$env:ENV_PROFILE="high_gpu"; poetry run streamlit run src/main.py` |
+
+> **참고:**  
+> - 환경 변수가 올바르게 전달되지 않으면 원하는 프로필이 적용되지 않습니다.  
+> - 커맨드 입력 후, `configs/config.yaml`의 high_gpu 프로필이 실제로 적용되는지 로그 또는 출력에서 확인하세요.
+> - poetry 환경이 활성화되어야 하며, streamlit 및 기타 의존 패키지가 poetry 환경에 설치되어 있어야 합니다.
+
+**문제 해결:**
+- 환경 변수가 main.py에서 정상적으로 읽히는지 확인하려면, main.py 상단에 다음 코드를 추가해 출력해볼 수 있습니다:
+    ```python
+    import os
+    print("ENV_PROFILE:", os.environ.get("ENV_PROFILE"))
+    ```
+- 파일/경로가 올바른지 확인하세요 (`src/main.py` 경로에 파일이 있어야 합니다).
+- poetry 환경에서 streamlit이 설치되어 있어야 하며, 필요시 `poetry add streamlit`으로 추가하세요.
+
 * **Q: PDF 외에 다른 파일(예: DOCX, PPTX)도 사용할 수 있나요?**  
   * A: 현재 버전은 PDF 파일만 공식적으로 지원합니다. 다른 파일 형식을 지원하려면 src/document_preprocessor.py에 해당 파일에 맞는 LangChain 로더를 추가해야 합니다.  
 * **Q: AI의 글쓰기 스타일을 바꾸고 싶습니다.**  
