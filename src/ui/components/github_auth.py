@@ -16,7 +16,8 @@ class GithubAuthenticator:
 
         # 이미 인증된 경우
         if SessionKey.GITHUB_CLIENT in st.session_state:
-            st.success(f"✅ GitHub 계정 연결됨: @{st.session_state[SessionKey.GITHUB_CLIENT].login}")
+            # --- FIX: Use the correct session key for the username ---
+            st.success(f"✅ GitHub 계정 연결됨: @{st.session_state.get(SessionKey.GITHUB_USERNAME, 'N/A')}")
             st.info(f"📝 블로그 Repository: {st.session_state[SessionKey.GITHUB_REPO]}")
 
             col1, col2 = st.columns(2)
@@ -41,8 +42,7 @@ class GithubAuthenticator:
         if st.button(
             "인증하기", type="primary", disabled=not (github_pat and github_username)
         ) and self._authenticate_github(github_pat, github_username):
-            st.success("✅ GitHub 인증 성공!")
-            return True
+            st.rerun()
         return False
 
     def _authenticate_github(self, github_pat: str, github_username: str) -> bool:
@@ -51,7 +51,7 @@ class GithubAuthenticator:
             github_user = github_client.get_user()
             actual_username = github_user.login
 
-            if actual_username != github_username:
+            if actual_username.lower() != github_username.lower():
                 st.warning(f"⚠️ 입력한 username({github_username})과 토큰 소유자({actual_username})가 다릅니다.")
                 st.info(f"토큰 소유자 계정({actual_username})으로 진행합니다.")
         except GithubException as e:
@@ -83,8 +83,16 @@ class GithubAuthenticator:
         st.session_state[SessionKey.GITHUB_CLIENT] = github_client
         st.session_state[SessionKey.GITHUB_PAT] = github_pat
         st.session_state[SessionKey.GITHUB_REPO] = repository_name
+        # --- FIX: Store the authenticated user's login name ---
+        st.session_state[SessionKey.GITHUB_USERNAME] = actual_username
 
+        st.success("✅ GitHub 인증 성공!")
         return True
 
     def _clear_session_state(self):
-        pass
+        """Clears authentication-related keys from the session state."""
+        st.session_state.pop(SessionKey.GITHUB_CLIENT, None)
+        st.session_state.pop(SessionKey.GITHUB_PAT, None)
+        st.session_state.pop(SessionKey.GITHUB_REPO, None)
+        st.session_state.pop(SessionKey.GITHUB_USERNAME, None)
+

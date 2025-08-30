@@ -11,7 +11,7 @@ def test_pdf_parsing():
     # --- Configuration ---
     # 1. Place a test PDF in your 'data' directory.
     # 2. Change 'your_test_file.pdf' to the actual filename.
-    pdf_filename = "Analysis and Assessment of Gateway Process_by_CIA.pdf"
+    pdf_filename = "[LM to LLM] (1-1) 언어모델이란 무엇인가.pdf"
     # -------------------
 
     try:
@@ -44,8 +44,8 @@ def test_pdf_parsing():
 
             # --- ADDED: Check for the second-to-last page ---
             if len(pages) > 2: # Ensure there are at least 3 pages
-                print("--- Second-to-Last Page Content ----")
-                print(pages[-2].page_content) # Use -2 to access the second-to-last item
+                print("--- Page Content ----")
+                print(pages[5].page_content) # Use -2 to access the second-to-last item
                 print("-------------------------------------\n")
             if len(pages) > 1:
                 print("--- Last Page Content ----")
