@@ -1,7 +1,7 @@
 [project]
 name = "upstageailab-langchain-pjt-langchain-8"
 version = "1.0.0"
-description = ""
+description = "Blog Content Creator Agent"
 authors = [
     {name = "Jo Uiyoung",email = "joyuiyeong@gmail.com"},
     {name = "Ko Minju",email = "alswn7212@gmail.com"},
