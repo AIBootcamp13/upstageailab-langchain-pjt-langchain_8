@@ -160,3 +160,13 @@ log/
 !docs/feature-summary
 jekyll-site/
 archives/
+
+# Dev
+readme.md
+RedisJSON/
+dump.rdb
+
+
+# Quick commands
+# To unstage a file
+# git rm --cached readme.md
