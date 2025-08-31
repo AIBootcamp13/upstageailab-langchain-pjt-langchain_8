@@ -133,7 +133,7 @@ notebooks/yuiyeong/01_data_ingestion_test.ipynb
 # Exclude output and vector store directories
 output/
 vector_store/
-
+db/
 # Exclude scripts
 scripts/comment_out_conda_in_bashrc.sh
 scripts/run_streamlit.sh
@@ -144,10 +144,11 @@ requirements.trimmed.txt
 requirements.txt
 poetry.toml
 poetry.lock
-
+/.png
 # Exclude other files
 .gitattributes
 READEME.md
+readme.md
 data
 
 # Exclude folders

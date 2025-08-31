@@ -36,7 +36,7 @@ class VectorStore:
         else:
             raise ValueError(f"지원되지 않는 임베딩 제공자: {EMBEDDING_PROVIDER}")
 
-        # --- MODIFIED: ChromaDB가 디스크에 저장하도록 persist_directory를 지정합니다. ---
+        # --- ChromaDB가 디스크에 저장하도록 persist_directory를 지정합니다. ---
         # 이 설정을 통해 데이터베이스가 메모리가 아닌 파일로 저장되어,
         # 애플리케이션을 재시작해도 임베딩된 데이터를 그대로 사용할 수 있습니다.
         self.store = Chroma(

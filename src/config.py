@@ -136,3 +136,8 @@ HISTORY_STRATEGY = AGENT_CONFIG.get("history_strategy", DEFAULT_AGENT.get("histo
 AGENT_LLM_CONFIG = AGENT_CONFIG.get("llm", {})
 DEFAULT_AGENT_LLM = DEFAULT_AGENT.get("llm", {})
 AGENT_LLM_MAX_TOKENS = AGENT_LLM_CONFIG.get("max_tokens", DEFAULT_AGENT_LLM.get("max_tokens", None))
+
+# --- Redis 캐시 설정 로드 ---
+REDIS_CONFIG = CONFIG.get("redis", {})
+REDIS_HOST = REDIS_CONFIG.get("host", "localhost")
+REDIS_PORT = REDIS_CONFIG.get("port", 6379)

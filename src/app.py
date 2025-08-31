@@ -1,7 +1,7 @@
 from enum import Enum
 
 import streamlit as st
-
+from src.caching import setup_caching
 from src.ui.components.contents_editor import ContentsEditor
 from src.ui.components.file_uploader import FileUploader
 from src.ui.components.github_auth import GithubAuthenticator
@@ -72,5 +72,8 @@ class BlogCreatorApp:
 
 
 if __name__ == "__main__":
+    # --- ADDED: 애플리케이션 시작 시 캐싱 설정 ---
+    # 앱이 실행될 때 가장 먼저 캐시 설정을 시도합니다.
+    setup_caching()    
     app = BlogCreatorApp()
     app.run()
