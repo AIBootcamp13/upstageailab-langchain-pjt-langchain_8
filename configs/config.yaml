@@ -26,8 +26,23 @@ profiles:
     embedding_provider: "huggingface"                       # 임베딩을 로컬/허깅페이스에서 수행
     embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
     llm_provider: "ollama"                                  # 로컬 LLM 실행기 예시
-    llm_model: "llama3.1:8b"                                # 로컬 LLM 모델 (예: llama3.1:8b)
+    llm_model: "llama3.1:8b"            
+                        # 로컬 LLM 모델 (예: llama3.1:8b)
+# -------------------------------------------------------------------------------
+# Enhanced LLM Selection
+#    
+# -------------------------------------------------------------------------------
 
+llm_providers:
+  openai:
+    - "gpt-4o"
+    - "gpt-4-turbo"
+    - "gpt-3.5-turbo"
+  ollama:
+    - "gpt-oss:20b"
+    - "llama3"
+    - "gemma3:4b"
+    - "gemma3:4b-it-qat" # gemma3:27b-it-qat
 # -------------------------------------------------------------------------------
 # 2) 애플리케이션 기본 설정 (Application Settings)
 #    - 프로젝트 전반에 걸친 공통 설정 (시간대, 디렉토리, 기본 프로필 등)

@@ -14,22 +14,34 @@ class GithubAuthenticator:
     STATUS_NOT_FOUND_CODE = 404
 
     def render(self):
-        """사이드바에 인증 UI를 렌더링합니다. 더 이상 앱 흐름을 제어하는 bool 값을 반환하지 않습니다."""
+        """사이드바에 인증 UI를 렌더링합니다."""
         st.subheader("🔐 GitHub 인증")
 
-        # 이미 인증된 경우, 로그인 정보와 로그아웃 버튼을 표시합니다.
+        # --- MODIFIED: 로그인 흐름 개선 ---
+        # 1. 이미 인증된 경우, 로그인 정보와 로그아웃 버튼을 표시합니다.
         if SessionKey.GITHUB_CLIENT in st.session_state:
-            username = st.session_state.get(SessionKey.GITHUB_USERNAME, "N/A")
-            repo = st.session_state.get(SessionKey.GITHUB_REPO, "N/A")
-            st.success(f"✅ 로그인됨: @{username}")
-            st.caption(f"연결된 Repository: {repo}")
-
-            if st.button("로그아웃", use_container_width=True):
-                self._clear_session_state()
-                st.rerun()
+            self._render_authenticated_view()
             return
+        
+        # 2. 인증되지 않은 경우, 로그인 폼을 표시합니다.
+        # st.expander를 사용하여 UI를 깔끔하게 유지합니다.
+        with st.expander("GitHub에 로그인하여 포스트 발행하기", expanded=False):
+            self._render_login_form()
+        # --------------------------------
 
-        # 인증되지 않은 경우, 로그인 폼을 표시합니다.
+    def _render_authenticated_view(self):
+        """사용자가 인증되었을 때의 UI를 렌더링합니다."""
+        username = st.session_state.get(SessionKey.GITHUB_USERNAME, "N/A")
+        repo = st.session_state.get(SessionKey.GITHUB_REPO, "N/A")
+        st.success(f"✅ 로그인됨: @{username}")
+        st.caption(f"연결된 Repository: {repo}")
+
+        if st.button("로그아웃", use_container_width=True):
+            self._clear_session_state()
+            st.rerun()
+
+    def _render_login_form(self):
+        """로그인에 필요한 입력 필드와 버튼을 렌더링합니다."""
         github_pat = st.text_input(
             "GitHub Personal Access Token (PAT)",
             type="password",
@@ -45,6 +57,7 @@ class GithubAuthenticator:
             st.rerun()
 
     def _authenticate_github(self, github_pat: str, github_username: str) -> bool:
+        # 이 메서드의 로직은 변경되지 않습니다.
         try:
             github_client = Github(github_pat)
             github_user = github_client.get_user()
@@ -76,9 +89,8 @@ class GithubAuthenticator:
                 st.info("토큰에 repo 권한이 있는지 확인해주세요.")
             else:
                 st.error(f"❌ Repository 접근 실패: {e!s}")
-            return False
+                return False
 
-        # 세션 상태를 업데이트합니다.
         st.session_state[SessionKey.GITHUB_CLIENT] = github_client
         st.session_state[SessionKey.GITHUB_PAT] = github_pat
         st.session_state[SessionKey.GITHUB_REPO] = repository_name

@@ -17,7 +17,7 @@ class FileUploader:
     """
 
     def __init__(self):
-        self.available_types = ["pdf"]
+        self.available_types = ["pdf", "md", "py", "ipynb"]
 
     def render(self) -> bool:
         """Renders the Streamlit UI for file uploading and processing."""
