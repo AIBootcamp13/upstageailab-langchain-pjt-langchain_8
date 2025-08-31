@@ -1,4 +1,5 @@
 # src/ui/components/contents_editor.py
+# Upgraded UI
 import json
 import uuid
 from dataclasses import dataclass
@@ -125,7 +126,10 @@ class ContentsEditor:
     def _handle_user_prompt(self, agent: BlogContentAgent, prompt: str, session_id: str):
         """Handles user input by calling the agent and updating the state."""
         with st.spinner("⏳ 수정 사항 반영 중..."):
-            response_data = agent.update_blog_post(prompt, session_id)
+            # --- FIX: LangGraph 에이전트와 호환되도록 현재 초안을 전달합니다 ---
+            # 새로운 update_blog_post 메서드는 user_request, draft, session_id를 인자로 받습니다.
+            current_draft = st.session_state.get(SessionKey.BLOG_DRAFT, "")
+            response_data = agent.update_blog_post(prompt, current_draft, session_id)
 
             if response_data.get("type") == "draft":
                 st.session_state[SessionKey.BLOG_DRAFT] = response_data.get("content")
@@ -135,4 +139,3 @@ class ContentsEditor:
     def finalize_draft(self):
         """Saves the final draft to the session state for the publishing stage."""
         st.session_state[SessionKey.BLOG_POST] = st.session_state.get(SessionKey.BLOG_DRAFT)
-

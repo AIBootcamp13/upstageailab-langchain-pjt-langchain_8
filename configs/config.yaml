@@ -145,3 +145,7 @@ defaults:
 #
 # 빠른 디버그 명령어 예시:
 # pkill -f 'streamlit run' || true; sleep 1; poetry run streamlit run src/app.py --logger.level=debug
+#
+# To start Redis with the module, use:
+# redis-server --loadmodule /home/wb2x/workspace/upstageailab-langchain-pjt-langchain_8/modules/rejson.so
+#
