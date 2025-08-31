@@ -165,7 +165,7 @@ archives/
 readme.md
 RedisJSON/
 dump.rdb
-
+.chainlit/translations
 
 # Quick commands
 # To unstage a file

@@ -18,6 +18,7 @@ from src.config import (
     TAVILY_MAX_RESULTS,
 )
 from src.graph import GraphBuilder
+from src.tokens import estimate_tokens, add_usage
 
 
 class BlogContentAgent:
@@ -75,9 +76,12 @@ class BlogContentAgent:
         """
         history = self.get_session_history(session_id)
         history.add_user_message("블로그 초안을 작성해줘.")
-
+        # estimate input/output tokens around LLM call
+        in_tokens = estimate_tokens(prompt, model=getattr(self.llm, "model", None))
         ai_message = self.llm.invoke(prompt)
-        
+        out_tokens = estimate_tokens(ai_message.content, model=getattr(self.llm, "model", None))
+        add_usage(session_id, in_tokens, out_tokens)
+
         draft_json = json.dumps(
             {"type": "draft", "content": ai_message.content}, ensure_ascii=False
         )
@@ -129,9 +133,12 @@ class BlogContentAgent:
             "draft": draft,
             "user_request": user_request,
             "chat_history": history.messages,
-            "response": "", # 응답 필드 초기화
+            "response": "",  # 응답 필드 초기화
         }
 
+        # Roughly estimate input tokens for this turn (router+nodes aggregate)
+        concat_input = (draft or "") + "\n\n" + (user_request or "")
+        in_tokens = estimate_tokens(concat_input, model=getattr(self.llm, "model", None))
         graph_stream = self.graph.stream(initial_state)
 
         final_draft = ""
@@ -145,13 +152,13 @@ class BlogContentAgent:
                     if new_content:
                         final_draft += new_content
                         yield {"type": "draft", "content": new_content}
-                
+
                 if "response" in node_output and isinstance(node_output["response"], str):
                     new_content = node_output["response"][len(final_response) :]
                     if new_content:
                         final_response += new_content
                         yield {"type": "chat", "content": new_content}
-        
+
         # --- MODIFIED: Save the correct message type to history ---
         if final_draft:
             # 초안이 수정된 경우
@@ -162,4 +169,8 @@ class BlogContentAgent:
             # 채팅 응답이 생성된 경우
             history.add_ai_message(
                 json.dumps({"type": "chat", "content": final_response}, ensure_ascii=False)
-            )        
+            )
+
+        # Add output tokens (sum of both kinds)
+        out_tokens = estimate_tokens(final_draft + final_response, model=getattr(self.llm, "model", None))
+        add_usage(session_id, in_tokens, out_tokens)
