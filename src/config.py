@@ -102,12 +102,17 @@ CHUNK_OVERLAP = TEXT_SPLITTER_CONFIG.get("chunk_overlap", DEFAULT_TEXT_SPLITTER.
 VECTOR_STORE_CONFIG = CONFIG.get("vector_store", {})
 DEFAULT_VECTOR_STORE = DEFAULTS_CONFIG.get("vector_store", {})
 COLLECTION_NAME = VECTOR_STORE_CONFIG.get("collection_name", DEFAULT_VECTOR_STORE.get("collection_name", "default_collection"))
+# 이 경로에 ChromaDB 데이터가 저장됩니다.
+VECTOR_STORE_PERSIST_DIR = ROOT_DIR / VECTOR_STORE_CONFIG.get("persist_directory", "db/chroma")
+
 SEARCH_TYPE = VECTOR_STORE_CONFIG.get("search_type", DEFAULT_VECTOR_STORE.get("search_type", "similarity"))
 SEARCH_KWARGS = VECTOR_STORE_CONFIG.get("search_kwargs", DEFAULT_VECTOR_STORE.get("search_kwargs", {"k": 5}))
 
 # 프롬프트 설정
 DRAFT_PROMPT_TEMPLATE = PROMPTS.get("draft_prompt", "")
 UPDATE_PROMPT_TEMPLATE = PROMPTS.get("update_prompt", "")
+
+
 
 # --- 에이전트 설정 ---
 AGENT_CONFIG = CONFIG.get("agent", {})

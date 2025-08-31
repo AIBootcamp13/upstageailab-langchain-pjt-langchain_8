@@ -37,8 +37,10 @@ dependencies = [
     "pysqlite3-binary (>=0.5.4,<0.6.0); sys_platform != 'darwin'",
     "sentence-transformers (>=2.2.2,<3.0.0)",
     "langchain-tavily (>=0.1.1,<0.2.0)",
-
-
+    "langgraph" = "^0.0.30",
+    "langchain-redis" = "^0.1.1",
+    "redis" = "^5.0.3",
+    "streamlit-ace" = "^0.1.1",
 ]
 
 [project.optional-dependencies]
