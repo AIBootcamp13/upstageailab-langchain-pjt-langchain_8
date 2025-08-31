@@ -36,9 +36,16 @@ class BlogContentAgent:
     def _get_llm(self, llm_provider: str, llm_model: str):
         """설정에 따라 LLM 클라이언트를 반환합니다."""
         if llm_provider == "openai":
-            return ChatOpenAI(model=llm_model, temperature=0)
+            # enable streaming at the LLM level when possible
+            try:
+                return ChatOpenAI(model=llm_model, temperature=0, streaming=True)
+            except TypeError:
+                return ChatOpenAI(model=llm_model, temperature=0)
         elif llm_provider == "ollama":
-            return ChatOllama(model=llm_model, temperature=0)
+            try:
+                return ChatOllama(model=llm_model, temperature=0, streaming=True)
+            except TypeError:
+                return ChatOllama(model=llm_model, temperature=0)
         else:
             raise ValueError(f"지원하지 않는 LLM 제공자입니다: {llm_provider}")
 
@@ -78,15 +85,29 @@ class BlogContentAgent:
         history.add_user_message("블로그 초안을 작성해줘.")
         # estimate input/output tokens around LLM call
         in_tokens = estimate_tokens(prompt, model=getattr(self.llm, "model", None))
-        ai_message = self.llm.invoke(prompt)
-        out_tokens = estimate_tokens(ai_message.content, model=getattr(self.llm, "model", None))
+        # Prefer async LLM call with Chainlit Langchain callback handler for streaming
+        try:
+            from chainlit import LangchainCallbackHandler
+
+            # Use the async invoke if available to attach callbacks
+            if hasattr(self.llm, "ainvoke"):
+                ai_message = self.llm.ainvoke(prompt, callbacks=[LangchainCallbackHandler(stream_final_answer=True)])
+                # if this returns a coroutine, await it
+                if hasattr(ai_message, "__await__"):
+                    ai_message = ai_message.__await__().__next__()
+            else:
+                ai_message = self.llm.invoke(prompt)
+        except Exception:
+            # Fallback to synchronous invoke
+            ai_message = self.llm.invoke(prompt)
+
+        out_tokens = estimate_tokens(getattr(ai_message, 'content', str(ai_message)), model=getattr(self.llm, "model", None))
         add_usage(session_id, in_tokens, out_tokens)
 
-        draft_json = json.dumps(
-            {"type": "draft", "content": ai_message.content}, ensure_ascii=False
-        )
+        content = getattr(ai_message, "content", str(ai_message))
+        draft_json = json.dumps({"type": "draft", "content": content}, ensure_ascii=False)
         history.add_ai_message(draft_json)
-        return ai_message.content
+        return content
 
     def update_blog_post(
         self, user_request: str, draft: str, session_id: str

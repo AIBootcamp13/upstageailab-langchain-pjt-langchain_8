@@ -84,8 +84,14 @@ class GraphBuilder:
         {state['user_request']}
         """
         # -----------------------------------------------------------
-        response = self.llm.invoke(prompt)
-        return {"draft": response.content}
+        # Attempt to attach Chainlit's LangchainCallbackHandler for streaming
+        try:
+            from chainlit import LangchainCallbackHandler
+
+            response = self.llm.invoke(prompt, callbacks=[LangchainCallbackHandler(stream_final_answer=True)])
+        except Exception:
+            response = self.llm.invoke(prompt)
+        return {"draft": getattr(response, 'content', str(response))}
 
     def update_draft_after_tool_call(self, state: AgentState) -> Dict[str, Any]:
         """
@@ -132,8 +138,13 @@ class GraphBuilder:
         {state['user_request']}
         """
         # -----------------------------------------------------------
-        response = self.llm.invoke(prompt)
-        return {"draft": response.content}
+        try:
+            from chainlit import LangchainCallbackHandler
+
+            response = self.llm.invoke(prompt, callbacks=[LangchainCallbackHandler(stream_final_answer=True)])
+        except Exception:
+            response = self.llm.invoke(prompt)
+        return {"draft": getattr(response, 'content', str(response))}
 
     def conversational_chat_node(self, state: AgentState) -> Dict[str, str]:
         """
@@ -148,8 +159,13 @@ class GraphBuilder:
         [사용자 질문]
         {state['user_request']}
         """
-        response = self.llm.invoke(prompt)
-        return {"response": response.content}
+        try:
+            from chainlit import LangchainCallbackHandler
+
+            response = self.llm.invoke(prompt, callbacks=[LangchainCallbackHandler(stream_final_answer=True)])
+        except Exception:
+            response = self.llm.invoke(prompt)
+        return {"response": getattr(response, 'content', str(response))}
 
     def router(self, state: AgentState) -> Dict[str, str]:
         """
@@ -172,8 +188,13 @@ class GraphBuilder:
         [사용자 요청]
         {state['user_request']}
         """
-        response = self.llm.invoke(routing_prompt)
-        route = response.content.strip()
+        try:
+            from chainlit import LangchainCallbackHandler
+
+            response = self.llm.invoke(routing_prompt, callbacks=[LangchainCallbackHandler()])
+        except Exception:
+            response = self.llm.invoke(routing_prompt)
+        route = getattr(response, 'content', str(response)).strip()
 
         if route == "rewrite":
             return {"route": "rewrite"}
