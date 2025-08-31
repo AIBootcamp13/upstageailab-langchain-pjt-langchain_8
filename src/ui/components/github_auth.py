@@ -1,3 +1,5 @@
+# src/ui/components/github_auth.py
+
 import streamlit as st
 from github import Github, GithubException
 
@@ -5,31 +7,29 @@ from src.ui.enums import SessionKey
 
 
 class GithubAuthenticator:
-    """GitHub 인증 및 Repository 접근 권한 확인 클래스"""
+    """사이드바에 표시되는 GitHub 인증 및 상태 관리 클래스입니다."""
 
     STATUS_UNAUTHORIZED_CODE = 401
     STATUS_NOT_ALLOWED_CODE = 403
     STATUS_NOT_FOUND_CODE = 404
 
-    def render(self) -> bool:
+    def render(self):
+        """사이드바에 인증 UI를 렌더링합니다. 더 이상 앱 흐름을 제어하는 bool 값을 반환하지 않습니다."""
         st.subheader("🔐 GitHub 인증")
 
-        # 이미 인증된 경우
+        # 이미 인증된 경우, 로그인 정보와 로그아웃 버튼을 표시합니다.
         if SessionKey.GITHUB_CLIENT in st.session_state:
-            # --- FIX: Use the correct session key for the username ---
-            st.success(f"✅ GitHub 계정 연결됨: @{st.session_state.get(SessionKey.GITHUB_USERNAME, 'N/A')}")
-            st.info(f"📝 블로그 Repository: {st.session_state[SessionKey.GITHUB_REPO]}")
+            username = st.session_state.get(SessionKey.GITHUB_USERNAME, "N/A")
+            repo = st.session_state.get(SessionKey.GITHUB_REPO, "N/A")
+            st.success(f"✅ 로그인됨: @{username}")
+            st.caption(f"연결된 Repository: {repo}")
 
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("다음 단계로 →", type="primary", use_container_width=True):
-                    return True
-            with col2:
-                if st.button("다시 로그인", use_container_width=True):
-                    self._clear_session_state()
-                    st.rerun()
-            return False
+            if st.button("로그아웃", use_container_width=True):
+                self._clear_session_state()
+                st.rerun()
+            return
 
+        # 인증되지 않은 경우, 로그인 폼을 표시합니다.
         github_pat = st.text_input(
             "GitHub Personal Access Token (PAT)",
             type="password",
@@ -40,10 +40,9 @@ class GithubAuthenticator:
         )
 
         if st.button(
-            "인증하기", type="primary", disabled=not (github_pat and github_username)
+            "인증하기", type="primary", disabled=not (github_pat and github_username), use_container_width=True
         ) and self._authenticate_github(github_pat, github_username):
             st.rerun()
-        return False
 
     def _authenticate_github(self, github_pat: str, github_username: str) -> bool:
         try:
@@ -79,20 +78,18 @@ class GithubAuthenticator:
                 st.error(f"❌ Repository 접근 실패: {e!s}")
             return False
 
-        # update state
+        # 세션 상태를 업데이트합니다.
         st.session_state[SessionKey.GITHUB_CLIENT] = github_client
         st.session_state[SessionKey.GITHUB_PAT] = github_pat
         st.session_state[SessionKey.GITHUB_REPO] = repository_name
-        # --- FIX: Store the authenticated user's login name ---
         st.session_state[SessionKey.GITHUB_USERNAME] = actual_username
 
         st.success("✅ GitHub 인증 성공!")
         return True
 
     def _clear_session_state(self):
-        """Clears authentication-related keys from the session state."""
+        """인증 관련 세션 상태 키를 모두 제거합니다."""
         st.session_state.pop(SessionKey.GITHUB_CLIENT, None)
         st.session_state.pop(SessionKey.GITHUB_PAT, None)
         st.session_state.pop(SessionKey.GITHUB_REPO, None)
         st.session_state.pop(SessionKey.GITHUB_USERNAME, None)
-

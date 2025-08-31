@@ -1,5 +1,5 @@
 # src/ui/components/contents_editor.py
-# Upgraded UI
+
 import json
 import uuid
 from dataclasses import dataclass
