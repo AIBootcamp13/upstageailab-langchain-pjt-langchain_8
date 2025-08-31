@@ -169,4 +169,4 @@ dump.rdb
 
 # Quick commands
 # To unstage a file
-# git rm --cached readme.md
+# git rm --cached readme.mdmodules/
