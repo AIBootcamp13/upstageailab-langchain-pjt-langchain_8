@@ -1,0 +1,166 @@
+# configs/config.yaml
+# ================================================================================
+# RAG 시스템 설정 파일
+# 설명: 이 파일은 환경 프로필, 애플리케이션 설정, 데이터 수집, 벡터 저장소,
+# 에이전트/LLM 설정, Redis, 기본값 및 개발 참고사항을 명확히 분리하여 정의합니다.
+# 활성 프로필 선택: ENV_PROFILE 환경변수로 지정 (예: ENV_PROFILE=high_gpu)
+# ================================================================================
+
+# -------------------------------------------------------------------------------
+# 1) 환경 프로필 (Environment Profiles)
+#    - 개발/운영 환경에 따라 다른 모델/임베딩 제공자를 사용하려면
+#      ENV_PROFILE 값을 해당 프로필명(default_cpu, high_gpu 등)으로 설정하세요.
+# -------------------------------------------------------------------------------
+profiles:
+  # 기본 프로필: GPU가 없는 환경 (API 기반 모델 사용)
+  default_cpu:
+    # 임베딩 제공자 및 모델
+    embedding_provider: "openai"               # 임베딩 API 제공자
+    embedding_model: "text-embedding-3-large"  # 임베딩 모델 이름
+    # LLM 제공자 및 모델
+    llm_provider: "openai"                     # LLM API 제공자
+    llm_model: "gpt-4o-mini"                   # LLM 모델 이름
+
+  # 고성능 프로필: 로컬/온프레미스 오픈소스 모델 사용 (GPU 권장)
+  high_gpu:
+    embedding_provider: "huggingface"                       # 임베딩을 로컬/허깅페이스에서 수행
+    embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+    llm_provider: "ollama"                                  # 로컬 LLM 실행기 예시
+    llm_model: "llama3.1:8b"            
+                        # 로컬 LLM 모델 (예: llama3.1:8b)
+# -------------------------------------------------------------------------------
+# Enhanced LLM Selection
+#    
+# -------------------------------------------------------------------------------
+
+llm_providers:
+  openai:
+    - "gpt-4o"
+    - "gpt-4-turbo"
+    - "gpt-3.5-turbo"
+  ollama:
+    - "gpt-oss:20b"
+    - "llama3"
+    - "gemma3:4b"
+    - "gemma3:4b-it-qat" # gemma3:27b-it-qat
+# -------------------------------------------------------------------------------
+# 2) 애플리케이션 기본 설정 (Application Settings)
+#    - 프로젝트 전반에 걸친 공통 설정 (시간대, 디렉토리, 기본 프로필 등)
+# -------------------------------------------------------------------------------
+app:
+  timezone: "Asia/Seoul"         # 한국 시간대
+  root_marker: "pyproject.toml"  # 프로젝트 루트 식별 파일
+  default_profile: "default_cpu" # 별도 ENV_PROFILE 지정 없을 시 사용될 프로필
+
+  # 디렉토리 경로 (상대경로 또는 절대경로 사용 가능)
+  directories:
+    logs: "logs"   # 로그 파일 저장 디렉토리
+    data: "data"   # 원시 데이터/업로드 파일 저장 디렉토리
+
+# -------------------------------------------------------------------------------
+# 3) 데이터 수집 및 처리 (Data Ingestion & Processing)
+#    - PDF 파서, 텍스트 분할, 외부 API 로더 등 데이터 전처리 관련 설정
+# -------------------------------------------------------------------------------
+ingestion:
+  parser: "local"   # PDF 파서: "local", "api", "unstructured" 중 선택
+
+  # 텍스트 분할 설정 (문서 임베딩 전 전처리)
+  text_splitter:
+    chunk_size: 1024      # 청크 크기 (토큰/문자 기준은 구현에 따라 다름)
+    chunk_overlap: 256    # 청크 겹침 길이
+
+  # Upstage / 외부 API 로더 예시 설정
+  api_loader:
+    split: "page"             # 페이지별 분할
+    output_format: "markdown" # 출력 포맷
+
+# -------------------------------------------------------------------------------
+# 4) 벡터 저장소 (Vector Store)
+#    - 임베딩 저장소 및 검색 파라미터
+# -------------------------------------------------------------------------------
+vector_store:
+  collection_name: "lecture_documents"   # 컬렉션/네임스페이스 이름
+  persist_directory: "db/chroma"         # 벡터 영속성 디렉토리 (앱 재시작 시 재사용)
+  search_type: "mmr"                     # 검색 방식: "mmr" 또는 "similarity"
+  search_kwargs:
+    k: 5                                 # 검색시 반환할 상위 k개
+
+# -------------------------------------------------------------------------------
+# 5) 에이전트 시스템 (Agent System)
+#    - 검색 도구, 대화 이력 관리, LLM 생성 파라미터 등
+# -------------------------------------------------------------------------------
+agent:
+  # 외부 웹 검색 도구(Tavily) 설정
+  tavily:
+    max_results: 3             # 반환할 최대 검색 결과 수
+    similarity_threshold: 0.9  # 쿼리 캐시/유사도 임계값
+
+  # 문서 검색 도구(리트리버) 설정
+  retriever_tool:
+    name: "document_search"
+    description: "업로드된 PDF 문서에서 정보를 검색하고 반환합니다. 문서 기반 질문에 사용하세요."
+
+  # 대화 기록(컨텍스트) 관리
+  max_history_messages: 50     # 채팅 이력 메시지 최대 개수
+  history_token_limit: 3000    # 토큰 기반 이력 제한
+  history_strategy: "compress" # 이력 관리 전략: "truncate" 또는 "compress"
+
+  # LLM 생성 관련 기본값
+  llm:
+    max_tokens: 512            # 생성 토큰 최대값 (null로 두면 호출시 지정)
+
+# -------------------------------------------------------------------------------
+# 6) Redis (세션/캐시/쿼리 캐시 등)
+# -------------------------------------------------------------------------------
+redis:
+  host: "localhost"
+  port: 6379
+
+# -------------------------------------------------------------------------------
+# 7) 기본값 (Defaults)
+#    - 프로필에 명시되지 않은 경우 사용할 fallback 값들
+# -------------------------------------------------------------------------------
+defaults:
+  text_splitter:
+    chunk_size: 1024
+    chunk_overlap: 256
+
+  vector_store:
+    collection_name: "default_collection"
+    search_type: "similarity"
+    search_kwargs:
+      k: 5
+
+  agent:
+    tavily:
+      max_results: 3
+      similarity_threshold: 0.9
+    retriever_tool:
+      name: "document_search"
+      description: "Document retriever tool"
+    max_history_messages: 50
+    history_token_limit: 3000
+    history_strategy: "truncate"
+    llm:
+      max_tokens: null
+
+# -------------------------------------------------------------------------------
+# 8) 개발 참고사항 (Development Notes)
+#    - 필요한 의존성 및 빠른 디버그 커맨드 (한글 주석)
+# -------------------------------------------------------------------------------
+# 필요한 의존성 (pyproject.toml에 추가 권장):
+# - pyyaml
+# - pymupdf
+# - langchain-huggingface
+# - sentence-transformers
+# - langchain-upstage
+#
+# 개발용 설치 예:
+# poetry install --extras dev
+#
+# 빠른 디버그 명령어 예시:
+# pkill -f 'streamlit run' || true; sleep 1; poetry run streamlit run src/app.py --logger.level=debug
+#
+# To start Redis with the module, use:
+# redis-server --loadmodule /home/wb2x/workspace/upstageailab-langchain-pjt-langchain_8/modules/rejson.so
+#

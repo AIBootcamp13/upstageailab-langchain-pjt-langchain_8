@@ -56,8 +56,23 @@ class BlogContentAgent:
             RETRIEVER_TOOL_NAME,
             RETRIEVER_TOOL_DESCRIPTION,
         )
-        tavily_tool = TavilySearch(max_results=TAVILY_MAX_RESULTS)
-        return [retriever_tool, tavily_tool]
+        tools = [retriever_tool]
+        # Avoid external API calls in Local GPU mode (ollama). Only add Tavily
+        # when provider is not strictly local.
+        try:
+            provider = getattr(self.llm, "_llm_type", None) or getattr(self.llm, "__class__", type("", (), {})).__name__.lower()
+            if isinstance(provider, str):
+                is_local = "ollama" in provider
+            else:
+                is_local = False
+        except Exception:
+            is_local = False
+
+        if not is_local:
+            tavily_tool = TavilySearch(max_results=TAVILY_MAX_RESULTS)
+            tools.append(tavily_tool)
+
+        return tools
 
     def _build_graph(self) -> Runnable:
         """LangGraph 상태 머신을 빌드하고 컴파일합니다."""

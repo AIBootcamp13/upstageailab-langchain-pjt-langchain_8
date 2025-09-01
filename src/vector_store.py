@@ -24,7 +24,10 @@ class VectorStore:
     def __init__(self):
         # 설정된 임베딩 제공자(provider)에 따라 모델을 초기화합니다.
         if EMBEDDING_PROVIDER == "openai":
-            # OpenAI API를 사용하는 경우
+            # OpenAI API를 사용하는 경우 — but if running Local GPU profile, prefer local embeddings
+            # The embedding provider comes from the active profile; if a local profile
+            # is selected it should not be 'openai'. We keep this branch for explicit
+            # OpenAI profiles only.
             self.embeddings = OpenAIEmbeddings(model=EMBEDDING_MODEL)
         elif EMBEDDING_PROVIDER == "huggingface":
             # 로컬 Hugging Face 모델을 사용하는 경우 (GPU 활용)
