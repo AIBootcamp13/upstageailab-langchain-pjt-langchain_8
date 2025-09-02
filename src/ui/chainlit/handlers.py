@@ -69,7 +69,7 @@ async def process_initial_draft(agent: BlogContentAgent, session_id: str):
             cl.Action(name="view_markdown", payload={"value": "view"}, label="📋 View Markdown"),
             cl.Action(name="toggle_tokens", payload={"value": "toggle"}, label="📊 Show Tokens"),
             cl.Action(name="list_artifacts", payload={"value": "list"}, label="📄 List Artifacts"),
-            cl.Action(name="publish_post", payload={"value": "publish"}, label="🚀 Publish Post"),
+            # cl.Action(name="publish_post", payload={"value": "publish"}, label="🚀 Publish Post"),
         ],
     ).send()
 
@@ -169,7 +169,7 @@ async def on_message(message: cl.Message):
                 cl.Action(name="save_draft", payload={"value": "save"}, label="💾 Save Draft"),
                 cl.Action(name="view_markdown", payload={"value": "view"}, label="📋 View Markdown"),
                 cl.Action(name="toggle_tokens", payload={"value": "toggle"}, label="📊 Show Tokens"),
-                cl.Action(name="publish_post", payload={"value": "publish"}, label="🚀 Publish Post"),
+                # cl.Action(name="publish_post", payload={"value": "publish"}, label="🚀 Publish Post"),
             ],
         ).send()
 

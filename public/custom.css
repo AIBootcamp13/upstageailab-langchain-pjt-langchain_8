@@ -1,12 +1,4 @@
-/* Hide only the specific broken logo that's causing issues */
-img[src*="localhost:8000/logo"] {
-    display: none !important;
-}
-
-/* Hide any image trying to load from the logo endpoint */
-img[src*="/logo?theme="] {
-    display: none !important;
-}
+/* Custom CSS adjustments (logo display rules removed to allow custom logos) */
 
 /* Style the app name to be more prominent */
 .MuiTypography-h6 {
