@@ -7,6 +7,8 @@ class SessionKey(str, Enum):
     GITHUB_REPO = "github_repo"
     # --- ADDED: Key to store the authenticated user's name ---
     GITHUB_USERNAME = "github_username"
+    # Timestamp when PAT was stored (ISO format)
+    GITHUB_PAT_STORED_AT = "github_pat_stored_at"
 
     CURRENT_STAGE = "current_stage"
 
@@ -17,6 +19,7 @@ class SessionKey(str, Enum):
     USER_REQUEST = "user_request"
     VECTOR_STORE = "vector_store"
     RETRIEVER = "retriever"
+    PROCESSED_DOCUMENTS = "processed_documents"
 
     IS_PUBLISHED = "is_published"
     SESSION_ID = "session_id"

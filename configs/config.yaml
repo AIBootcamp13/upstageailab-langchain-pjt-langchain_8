@@ -51,8 +51,10 @@ llm_providers:
     - "gpt-4-turbo"
     - "gpt-3.5-turbo"
   ollama:
-    - "llama3"
-    - "gemma"
+    - "llama3.1:8b"
+    - "gemma3:4b"
+    - "gemma3:4b-it-qat"
+    - "gpt-oss:20b"
   upstage:
     - "solar-1-mini-chat"
 
@@ -129,3 +131,31 @@ defaults:
     retriever_tool:
       name: "document_search"
       description: "Document retriever tool"
+
+# -------------------------------------------------------------------------------
+# 8) 개발 참고사항 (Development Notes)
+#    - 필요한 의존성 및 빠른 디버그 커맨드 (한글 주석)
+# -------------------------------------------------------------------------------
+# 필요한 의존성 (pyproject.toml에 추가 권장):
+# - pyyaml
+# - pymupdf
+# - langchain-huggingface
+# - sentence-transformers
+# - langchain-upstage
+#
+# 개발용 설치 예:
+# poetry install --extras dev
+#
+# 빠른 디버그 명령어 예시:
+# 
+# Streamlit
+# pkill -f 'streamlit run' || true; sleep 1; poetry run streamlit run src/app.py --logger.level=debug
+# 
+# Chainlit
+# pkill -f 'chainlit_app run' || true; sleep 1; poetry run chainlit run src/chainlit_app.py -w
+# 
+# To start Redis with the module, use:
+# redis-server --loadmodule /home/wb2x/workspace/upstageailab-langchain-pjt-langchain_8/modules/rejson.so
+#
+# ENV
+# poetry env activate

@@ -159,8 +159,12 @@ defaults:
 # poetry install --extras dev
 #
 # 빠른 디버그 명령어 예시:
+# Streamlit
 # pkill -f 'streamlit run' || true; sleep 1; poetry run streamlit run src/app.py --logger.level=debug
-#
+# 
+# Chainlit
+# pkill -f 'streamlit run' || true; sleep 1; poetry run chainlit run src/chainlit_app.py -w
+# 
 # To start Redis with the module, use:
 # redis-server --loadmodule /home/wb2x/workspace/upstageailab-langchain-pjt-langchain_8/modules/rejson.so
 #

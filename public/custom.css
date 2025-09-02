@@ -1,0 +1,24 @@
+/* Hide only the specific broken logo that's causing issues */
+img[src*="localhost:8000/logo"] {
+    display: none !important;
+}
+
+/* Hide any image trying to load from the logo endpoint */
+img[src*="/logo?theme="] {
+    display: none !important;
+}
+
+/* Style the app name to be more prominent */
+.MuiTypography-h6 {
+    font-size: 1.5rem !important;
+    font-weight: bold !important;
+}
+
+/* Ensure Chainlit Text elements don't truncate long markdown content */
+.cl-text, .cl-text pre, .cl-text .cl-markdown {
+    /* Make long markdown blocks scrollable while keeping layout tidy */
+    max-height: 600px !important;
+    height: auto !important;
+    overflow-y: auto !important;
+    white-space: pre-wrap !important;
+}

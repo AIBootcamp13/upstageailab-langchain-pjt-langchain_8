@@ -35,8 +35,17 @@ class FileUploader:
                     # 1. Preprocess the document
                     preprocessor = DocumentPreprocessor(file_path)
                     documents = preprocessor.process()
-                    # *** FIX: Save processed documents to session state for the agent ***
+                    # Save processed documents to Streamlit session state
                     st.session_state["processed_documents"] = documents
+                    # Also try to copy into Chainlit session if Chainlit is running so the agent can access them
+                    try:
+                        import chainlit as cl
+                        from src.ui.enums import SessionKey
+                        # store under the canonical session key
+                        cl.user_session.set(SessionKey.PROCESSED_DOCUMENTS, documents)
+                    except Exception:
+                        # Not running inside Chainlit; ignore
+                        pass
                     st.info(f"문서 전처리 완료: {len(documents)}개 청크 생성")
 
                     # 2. Store documents in the vector store

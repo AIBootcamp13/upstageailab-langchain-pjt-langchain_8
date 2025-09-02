@@ -48,39 +48,33 @@ class GraphBuilder:
         """
        
         prompt = f"""
-        당신은 마크다운(Markdown) 서식을 완벽하게 보존하는 전문 블로그 에디터입니다.
-        사용자의 요청에 따라 아래의 초안을 수정해주세요.
+        You are an expert blog editor. Your task is to intelligently revise the draft below based on the user's request.
+        Interpret the user's intent and apply the changes thoughtfully.
 
-        ### 매우 중요한 규칙 ###
-        - **기존 마크다운 서식을 절대 변경하지 마세요.** 예를 들어, `## 제목`을 `**제목**`으로 바꾸지 마세요.
-        - 요청된 내용만 수정하고, 나머지 부분과 서식은 그대로 유지해야 합니다.
-        - 수정된 **전체 초안**을 항상 반환해야 합니다.
+        ### Guiding Principles ###
+        - **Follow the User's Request**: Prioritize the user's instructions for changes to content, style, structure, or language.
+        - **Preserve Markdown Integrity**: Maintain valid Markdown formatting. For example, `## Title` should remain a level-2 header unless the user asks to change its level.
+        - **Return the Full Document**: Always return the complete, updated draft after applying the changes.
 
-        ### 좋은 수정의 예시 ###
-        [사용자 요청]
-        "## 소개" 제목을 "## RAG란 무엇인가?"로 바꿔줘.
+        ### Example ###
+        [User Request]
+        "Change the title to 'Understanding RAG' and make the tone more professional."
 
-        [수정 전 초안]
-        ## 소개
-        RAG는 LLM의 한계를 보완하는 기술입니다.
-        - 검색(Retrieval)
-        - 보강(Augmentation)
-        - 생성(Generation)
+        [Original Draft]
+        ## what is rag
+        rag is a cool tech.
 
-        [올바른 수정 후 초안]
-        ## RAG란 무엇인가?
-        RAG는 LLM의 한계를 보완하는 기술입니다.
-        - 검색(Retrieval)
-        - 보강(Augmentation)
-        - 생성(Generation)
+        [Correctly Revised Draft]
+        ## Understanding RAG
+        Retrieval-Augmented Generation (RAG) is a technique that enhances the capabilities of Large Language Models.
         ############################################
 
-        이제 아래의 실제 요청을 처리해주세요.
+        Now, process the real request below.
 
-        [현재 초안]
+        [Current Draft]
         {state['draft']}
 
-        [사용자 요청]
+        [User Request]
         {state['user_request']}
         """
         # -----------------------------------------------------------
@@ -211,11 +205,32 @@ class GraphBuilder:
         """
         graph = StateGraph(AgentState)
 
-        graph.add_node("router", self.router)
-        graph.add_node("simple_llm_call", self.simple_llm_call)
-        graph.add_node("call_tools", self.call_tools)
-        graph.add_node("update_draft_after_tool_call", self.update_draft_after_tool_call)
-        graph.add_node("conversational_chat_node", self.conversational_chat_node)
+        # Debug wrapper: wrap node functions to log received state (best-effort, non-blocking)
+        def wrap_with_logging(fn, name):
+            def wrapped(state):
+                try:
+                    # minimal logging to stdout so it's visible in server logs
+                    print(
+                        f"[graph-debug] entering node={name} draft_len={len(str(state.get('draft','')))} user_request={str(state.get('user_request',''))[:80]}"
+                    )
+                except Exception:
+                    pass
+                return fn(state)
+
+            return wrapped
+
+        # Add nodes with logging wrapper
+        graph.add_node("router", wrap_with_logging(self.router, "router"))
+        graph.add_node("simple_llm_call", wrap_with_logging(self.simple_llm_call, "simple_llm_call"))
+        graph.add_node("call_tools", wrap_with_logging(self.call_tools, "call_tools"))
+        graph.add_node(
+            "update_draft_after_tool_call",
+            wrap_with_logging(self.update_draft_after_tool_call, "update_draft_after_tool_call"),
+        )
+        graph.add_node(
+            "conversational_chat_node",
+            wrap_with_logging(self.conversational_chat_node, "conversational_chat_node"),
+        )
 
         graph.set_entry_point("router")
 
@@ -233,5 +248,5 @@ class GraphBuilder:
         graph.add_edge("call_tools", "update_draft_after_tool_call")
         graph.add_edge("update_draft_after_tool_call", END)
         graph.add_edge("conversational_chat_node", END)
-        
+
         return graph.compile()

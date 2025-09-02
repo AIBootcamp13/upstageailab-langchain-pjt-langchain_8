@@ -1,5 +1,4 @@
 # src/ui/chainlit/utils.py
-
 from pathlib import Path
 from typing import List
 import chainlit as cl
@@ -10,6 +9,14 @@ from src.document_preprocessor import DocumentPreprocessor
 from src.retriever import RetrieverFactory
 from src.ui.enums import SessionKey
 from src.vector_store import VectorStore
+from src.ui.chainlit.settings_core import setup_settings
+from src.ui.chainlit.session_helpers import (
+    get_processed_documents,
+    set_processed_documents,
+    get_retriever,
+    set_retriever,
+)
+from src.ui.chainlit.agent_factory import create_and_store_agent
 
 
 async def ingest_documents(files: List[cl.File]) -> bool:
@@ -39,7 +46,7 @@ async def ingest_documents(files: List[cl.File]) -> bool:
         await cl.Message(content="Could not extract any content from the uploaded files.").send()
         return False
 
-    cl.user_session.set("processed_documents", all_documents)
+    set_processed_documents(all_documents)
     msg.content = f"✅ Files processed: **{len(all_documents)}** chunks created."
     await msg.update()
 
@@ -49,76 +56,79 @@ async def ingest_documents(files: List[cl.File]) -> bool:
     cl.user_session.set(SessionKey.VECTOR_STORE, vector_store)
 
     retriever = RetrieverFactory.create(vector_store)
-    cl.user_session.set(SessionKey.RETRIEVER, retriever)
+    set_retriever(retriever)
 
-    await cl.Message(content="✅ Retriever is ready! Setting up the agent...").send()
+    # Update the original processing message to indicate the retriever is ready
+    msg.content = "✅ Retriever is ready! You can now set up the agent."
+    await msg.update()
     return True
 
 
 async def setup_agent(
-    llm_provider: str, llm_model: str
+    llm_provider: str, llm_model: str, agent_profile: str = "draft"
 ) -> BlogContentAgent | None:
     """
     Sets up the agent using the retriever from the user session.
     """
-    retriever = cl.user_session.get(SessionKey.RETRIEVER)
-    processed_docs = cl.user_session.get("processed_documents")
+    retriever = get_retriever()
+    processed_docs = get_processed_documents()
 
     if not retriever or not processed_docs:
         # This function should only be called after ingestion is complete.
         return None
 
-    agent = BlogContentAgent(
+    agent = create_and_store_agent(
         retriever=retriever,
         documents=processed_docs,
         llm_provider=llm_provider,
         llm_model=llm_model,
+        agent_profile=agent_profile,
     )
-    cl.user_session.set(SessionKey.BLOG_CREATOR_AGENT, agent)
     return agent
 
 
-async def rebuild_agent_with_new_model(llm_provider: str, llm_model: str) -> None:
+async def rebuild_agent_with_new_model(llm_provider: str, llm_model: str, agent_profile: str = "draft") -> None:
     """
     Rebuild or update the BlogContentAgent in the user session when the model/profile changes.
     This will recreate the agent using the existing retriever and processed documents.
     """
-    retriever = cl.user_session.get(SessionKey.RETRIEVER)
-    processed_docs = cl.user_session.get("processed_documents")
+    retriever = get_retriever()
+    processed_docs = get_processed_documents()
 
     if not retriever or not processed_docs:
         await cl.Message(content="Please upload a document before changing the model.").send()
         return
 
+    # Mark loading in session so UI can show inline loading indicators (icons/spinner)
+    cl.user_session.set("loading_model", True)
+    # Refresh the settings panel to show the loading state in the model label
+    await setup_settings(forced_provider=llm_provider)
+
+    # Notify user that model update is in progress using a single message to
+    # avoid multiple messages causing the input box to jump while the model
+    # is being recreated.
+    status_msg = cl.Message(content=f"⏳ Updating model to `{llm_model}` ({llm_provider})...")
+    await status_msg.send()
+
     agent = BlogContentAgent(
         retriever=retriever,
         documents=processed_docs,
         llm_provider=llm_provider,
         llm_model=llm_model,
+        agent_profile=agent_profile,
     )
     cl.user_session.set(SessionKey.BLOG_CREATOR_AGENT, agent)
-    await cl.Message(content=f"✅ Model updated to `{llm_model}` (provider: {llm_provider}). Regenerating draft...").send()
 
-    session_id = cl.user_session.get(SessionKey.SESSION_ID)
-    if session_id:
-        draft = await cl.make_async(agent.generate_draft)(session_id=session_id)
-        cl.user_session.set(SessionKey.BLOG_DRAFT, draft)
+    # Update the same message to indicate completion – this minimizes UI
+    # reflows because the message element is updated instead of creating
+    # a new one.
+    # Clear loading flag and refresh settings so icons and model label return to normal
+    cl.user_session.set("loading_model", False)
+    # Refresh settings panel
+    await setup_settings()
 
-        draft_msg = cl.Message(content="", author="BlogGenerator")
-        await draft_msg.send()
-        chunk_size = 10
-        for i in range(0, len(draft), chunk_size):
-            part = draft[i : i + chunk_size]
-            await draft_msg.stream_token(part)
-        await draft_msg.update()
-        
-        # Add actions to the new draft message
-        await cl.Message(
-            content="Draft regenerated with the new model. How would you like to proceed?",
-            parent_id=draft_msg.id, # This makes it a reply/follow-up
-            actions=[
-                cl.Action(name="edit_draft", payload={"value": "edit"}, label="📝 Edit Draft"),
-                cl.Action(name="save_draft", payload={"value": "save"}, label="💾 Save Draft"),
-                cl.Action(name="toggle_tokens", payload={"value": "toggle"}, label="📊 Show Tokens"),
-            ],
-        ).send()
+    status_msg.content = f"✅ Model updated to `{llm_model}` ({llm_provider}). You can regenerate the draft if needed."
+    status_msg.actions = [
+        cl.Action(name="regenerate_draft", payload={"value": "regenerate"}, label="🔁 Regenerate Draft"),
+    ]
+    await status_msg.update()

@@ -16,6 +16,8 @@ from src.config import (
     RETRIEVER_TOOL_NAME,
     RETRIEVER_TOOL_DESCRIPTION,
     TAVILY_MAX_RESULTS,
+    DRAFT_PROMPT_TEMPLATE,
+    UPDATE_PROMPT_TEMPLATE,
 )
 from src.graph import GraphBuilder
 from src.tokens import estimate_tokens, add_usage
@@ -25,10 +27,11 @@ class BlogContentAgent:
     """블로그 콘텐츠 생성을 위한 에이전트 클래스"""
 
     # --- __init__ now accepts llm_provider and llm_model ---
-    def __init__(self, retriever, documents: List[Document], llm_provider: str, llm_model: str):
+    def __init__(self, retriever, documents: List[Document], llm_provider: str, llm_model: str, agent_profile: str = "draft"):
         """에이전트를 초기화합니다."""
         self.documents = documents
         self.llm = self._get_llm(llm_provider, llm_model)
+        self.agent_profile = agent_profile
         self.tools = self._create_tools(retriever)
         self.graph = self._build_graph()
         self.session_histories: Dict[str, ChatMessageHistory] = {}
@@ -87,15 +90,31 @@ class BlogContentAgent:
 
     def generate_draft(self, session_id: str) -> str:
         """문서 내용을 기반으로 블로그 포스트의 초안을 생성합니다."""
-        joined_docs = "\n\n".join([doc.page_content for doc in self.documents])
-        # TODO: 프롬프트를 prompts.yaml에서 불러오도록 수정해야 합니다.
-        prompt = f"""
-        당신은 전문 기술 블로거입니다. 다음 문서를 참고하여 블로그 포스트 초안을 작성해주세요.
-        독자들이 이해하기 쉽게 흥미로운 제목과 내용을 만들어주세요. 마크다운 형식으로 작성해주세요.
+        # Rebuild documents from Chainlit session if available (uploaded files)
+        try:
+            import chainlit as cl
+            from src.ui.enums import SessionKey
+            pd = cl.user_session.get(SessionKey.PROCESSED_DOCUMENTS)
+            if pd and isinstance(pd, list):
+                self.documents = pd
+        except Exception:
+            # Not running inside Chainlit context or no processed docs available
+            pass
 
-        [참고 문서]
-        {joined_docs}
-        """
+        joined_docs = "\n\n".join([doc.page_content for doc in self.documents])
+        
+        # Select the appropriate prompt based on agent profile
+        if self.agent_profile == "draft":
+            prompt_template = DRAFT_PROMPT_TEMPLATE
+        elif self.agent_profile == "update":
+            prompt_template = UPDATE_PROMPT_TEMPLATE
+        else:
+            # Default to draft prompt
+            prompt_template = DRAFT_PROMPT_TEMPLATE
+        
+        # Fill in the content placeholder
+        prompt = prompt_template.replace("{content}", joined_docs)
+        
         history = self.get_session_history(session_id)
         history.add_user_message("블로그 초안을 작성해줘.")
         # estimate input/output tokens around LLM call
@@ -172,6 +191,32 @@ class BlogContentAgent:
             "response": "",  # 응답 필드 초기화
         }
 
+        # Debug: try to rebuild documents from Chainlit session so graph gets uploaded content
+        try:
+            import chainlit as cl
+            from src.ui.enums import SessionKey
+            pd = cl.user_session.get(SessionKey.PROCESSED_DOCUMENTS)
+            if pd and isinstance(pd, list):
+                self.documents = pd
+                # update initial_state draft to match rebuilt documents
+                initial_state["draft"] = "\n\n".join([doc.page_content for doc in self.documents])
+        except Exception:
+            pass
+
+        # For traceability, send a debug message when running under Chainlit
+        try:
+            import chainlit as cl
+            awaitable = getattr(cl, "Message", None)
+            if awaitable:
+                # Send a short debug message with sizes (non-blocking best-effort)
+                try:
+                    cl.Message(content=f"[debug] initial_state draft length={len(initial_state['draft'])}").send()
+                except Exception:
+                    pass
+        except Exception:
+            # Not running in Chainlit context
+            pass
+
         # Roughly estimate input tokens for this turn (router+nodes aggregate)
         concat_input = (draft or "") + "\n\n" + (user_request or "")
         in_tokens = estimate_tokens(concat_input, model=getattr(self.llm, "model", None))
@@ -180,7 +225,24 @@ class BlogContentAgent:
         final_draft = ""
         final_response = ""
 
-        # --- MODIFIED: Stream handler now yields a dictionary with type and content ---
+        # Heuristic: if user asked for a specific summary length (e.g., "summarize in 300 words"),
+        # try to enforce an approximate output length by post-processing the final_response.
+        def extract_requested_word_limit(text: str) -> int | None:
+            import re
+            m = re.search(r"(summariz|summary|summarise|summarize).{0,20}(\d{2,5})\s*(words|word)", text, re.IGNORECASE)
+            if m:
+                try:
+                    return int(m.group(2))
+                except Exception:
+                    return None
+            return None
+
+        requested_words = extract_requested_word_limit(user_request or "")
+
+        # Track words yielded when a user requests a specific summary length.
+        words_yielded = 0
+
+        # Stream handler: yield draft updates and chat responses; enforce word cap if requested.
         for event in graph_stream:
             for node_name, node_output in event.items():
                 if "draft" in node_output and isinstance(node_output["draft"], str):
@@ -191,7 +253,27 @@ class BlogContentAgent:
 
                 if "response" in node_output and isinstance(node_output["response"], str):
                     new_content = node_output["response"][len(final_response) :]
-                    if new_content:
+                    if not new_content:
+                        continue
+
+                    if requested_words:
+                        parts = new_content.split()
+                        remaining = requested_words - words_yielded
+                        if remaining <= 0:
+                            # Limit reached; stop streaming further responses.
+                            return
+                        if len(parts) > remaining:
+                            trimmed = " ".join(parts[:remaining])
+                            final_response += trimmed
+                            words_yielded += len(trimmed.split())
+                            yield {"type": "chat", "content": trimmed}
+                            # We've satisfied the requested length; stop.
+                            return
+                        else:
+                            final_response += new_content
+                            words_yielded += len(parts)
+                            yield {"type": "chat", "content": new_content}
+                    else:
                         final_response += new_content
                         yield {"type": "chat", "content": new_content}
 
@@ -210,3 +292,11 @@ class BlogContentAgent:
         # Add output tokens (sum of both kinds)
         out_tokens = estimate_tokens(final_draft + final_response, model=getattr(self.llm, "model", None))
         add_usage(session_id, in_tokens, out_tokens)
+
+        # If a word limit was requested, do a final trim and yield a concise version (non-stream)
+        if requested_words and final_response:
+            words = final_response.split()
+            if len(words) > requested_words:
+                trimmed = " ".join(words[:requested_words])
+                # yield a final chat message with the trimmed summary
+                yield {"type": "chat", "content": "\n\n" + trimmed}

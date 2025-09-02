@@ -3,8 +3,9 @@
 import uuid
 from typing import List
 import chainlit as cl
-# from chainlit.types import File
 
+from src.ui.chainlit.settings import setup_settings, PROVIDER_LABELS
+from src.ui.chainlit.icons import PROVIDER_ICONS
 from src.agent import BlogContentAgent
 from src.config import CONFIG, DEFAULT_PROFILE
 from src.ui.chainlit.utils import setup_agent, ingest_documents
@@ -16,23 +17,40 @@ async def on_chat_start():
     session_id = str(uuid.uuid4())
     cl.user_session.set(SessionKey.SESSION_ID, session_id)
 
-    try:
-        from src.ui.chainlit.settings import setup_settings
-        await setup_settings()
-    except Exception:
-        pass # Settings setup is optional
+    # Get the selected chat profile and extract provider info
+    selected_profile = cl.user_session.get("chat_profile")
+    
+    # Safely handle profile selection
+    if selected_profile:
+        # Parse the profile name to extract provider
+        # Format: "emoji ProviderName" (e.g., "🤖 OpenAI", "🐏 Ollama", "🚀 Upstage")
+        provider_key = None
+        for key, display in PROVIDER_LABELS.items():
+            if display in selected_profile:
+                provider_key = key
+                break
+        
+        if provider_key:
+            # Get the first available model for this provider
+            providers = CONFIG.get("llm_providers", {})
+            models = providers.get(provider_key, [])
+            default_model = models[0] if models else ""
+            
+            cl.user_session.set("llm_provider", provider_key)
+            cl.user_session.set("llm_model", default_model)
+            cl.user_session.set("agent_profile", "draft")  # Default to draft agent
+        
+        cl.user_session.set("last_profile", selected_profile)
 
-    # Guide the user on how to start
-    await cl.Message(
-        content="Welcome to the Blog Post Generator! Please upload a PDF, Markdown, or Python file to begin."
-    ).send()
+    # The settings panel will be set up once after initializing session values
+    await setup_settings()
 
 async def process_initial_draft(agent: BlogContentAgent, session_id: str):
     """Generates and streams the initial draft to the UI."""
     draft = await cl.make_async(agent.generate_draft)(session_id=session_id)
     cl.user_session.set(SessionKey.BLOG_DRAFT, draft)
 
-    draft_msg = cl.Message(content="", author="BlogGenerator")
+    draft_msg = cl.Message(content="", author="🤖 BlogGenerator")
     await draft_msg.send()
     
     # Stream the draft content
@@ -47,16 +65,38 @@ async def process_initial_draft(agent: BlogContentAgent, session_id: str):
         content="Initial draft generated! How would you like to refine it?",
         parent_id=draft_msg.id,
         actions=[
-            cl.Action(name="edit_draft", payload={"value": "edit"}, label="📝 Edit Draft"),
             cl.Action(name="save_draft", payload={"value": "save"}, label="💾 Save Draft"),
+            cl.Action(name="view_markdown", payload={"value": "view"}, label="📋 View Markdown"),
             cl.Action(name="toggle_tokens", payload={"value": "toggle"}, label="📊 Show Tokens"),
             cl.Action(name="list_artifacts", payload={"value": "list"}, label="📄 List Artifacts"),
+            cl.Action(name="publish_post", payload={"value": "publish"}, label="🚀 Publish Post"),
         ],
     ).send()
 
 @cl.on_message
 async def on_message(message: cl.Message):
     """Called when a user sends a message or uploads a file."""
+    # Check if profile changed
+    current_profile = cl.user_session.get("chat_profile")
+    last_profile = cl.user_session.get("last_profile")
+    if current_profile and current_profile != last_profile:
+        # Profile changed
+        cl.user_session.set("last_profile", current_profile)
+        # Parse provider
+        provider_key = None
+        for key, display in PROVIDER_LABELS.items():
+            if display in current_profile:
+                provider_key = key
+                break
+        if provider_key:
+            providers = CONFIG.get("llm_providers", {})
+            models = providers.get(provider_key, [])
+            default_model = models[0] if models else ""
+            cl.user_session.set("llm_provider", provider_key)
+            cl.user_session.set("llm_model", default_model)
+            await setup_settings()
+            # Provider changed - settings updated automatically
+    
     session_id = cl.user_session.get(SessionKey.SESSION_ID)
     agent: BlogContentAgent = cl.user_session.get(SessionKey.BLOG_CREATOR_AGENT)
     
@@ -87,7 +127,7 @@ async def on_message(message: cl.Message):
         default_profile_cfg = CONFIG.get("profiles", {}).get(DEFAULT_PROFILE, {})
         llm_provider = cl.user_session.get("llm_provider") or default_profile_cfg.get("llm_provider")
         llm_model = cl.user_session.get("llm_model") or default_profile_cfg.get("llm_model")
-        agent = await setup_agent(llm_provider, llm_model)
+        agent = await setup_agent(llm_provider, llm_model, cl.user_session.get("agent_profile", "draft"))
 
         if not agent:
             await cl.Message(content="Failed to initialize the agent. Please try again.").send()
@@ -99,8 +139,8 @@ async def on_message(message: cl.Message):
 
     # If agent exists, process the user's text message to update the draft
     draft = cl.user_session.get(SessionKey.BLOG_DRAFT, "")
-    draft_msg = cl.Message(content="", author="Draft")
-    chat_msg = cl.Message(content="", author="BlogGenerator")
+    draft_msg = cl.Message(content="", author="📝 Draft")
+    chat_msg = cl.Message(content="", author="🤖 BlogGenerator")
     stream = agent.get_response(message.content, draft, session_id)
 
     draft_updated = False
@@ -126,9 +166,10 @@ async def on_message(message: cl.Message):
         await cl.Message(
             content="✅ Draft has been updated.",
             actions=[
-                cl.Action(name="edit_draft", payload={"value": "edit"}, label="📝 Edit Draft"),
                 cl.Action(name="save_draft", payload={"value": "save"}, label="💾 Save Draft"),
+                cl.Action(name="view_markdown", payload={"value": "view"}, label="📋 View Markdown"),
                 cl.Action(name="toggle_tokens", payload={"value": "toggle"}, label="📊 Show Tokens"),
+                cl.Action(name="publish_post", payload={"value": "publish"}, label="🚀 Publish Post"),
             ],
         ).send()
 
