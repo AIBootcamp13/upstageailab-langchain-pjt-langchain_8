@@ -130,9 +130,70 @@ async def on_view_markdown(action: cl.Action):
         actions=[
             cl.Action(name="copy_instructions", payload={}, label="📋 How to Copy"),
             cl.Action(name="save_draft", payload={"value": "save"}, label="💾 Save Draft"),
+            # Inline edit: open a small editor pre-filled with the draft. The
+            # `submit_inline_editor` callback will receive the widget payload
+            # (key: `editor`) and persist the change.
+            cl.Action(name="open_inline_editor", payload={"message_id": msg.id}, label="✏️ Edit"),
             # cl.Action(name="publish_post", payload={"value": "publish"}, label="🚀 Publish Post"),
         ],
     ).send()
+
+
+
+@cl.action_callback("open_inline_editor")
+async def on_open_inline_editor(action: cl.Action):
+    """Open an inline TextInput editor prefilled with the current draft.
+
+    The existing `submit_inline_editor` callback expects the submitted
+    payload to contain the key `editor`. We create a TextInput with id
+    `editor` so the submitted payload matches that shape.
+    """
+    payload = getattr(action, "payload", {}) or {}
+    parent_message_id = payload.get("message_id")
+
+    # Fetch current draft (fallback to empty string)
+    draft = cl.user_session.get(SessionKey.BLOG_DRAFT, "")
+
+    # Create a TextInput widget. TextInput/TextArea are available on
+    # chainlit.input_widget; we imported it as `iw` at the top of this file.
+    try:
+        editor = iw.TextInput(id="editor", label="Edit Draft", initial_value=draft)
+    except Exception:
+        # Some Chainlit versions may only provide TextArea - try fallback
+        try:
+            editor = iw.TextArea(id="editor", label="Edit Draft", initial_value=draft)
+        except Exception:
+            # As a last resort, send a message instructing the user how to
+            # edit via the preview workflow.
+            await cl.Message(content="Inline editor is not supported by the running Chainlit version.").send()
+            return
+
+    # Some Chainlit/input_widget versions expose widget objects that do not
+    # implement the `send` coroutine used by Message.send() internals. Avoid
+    # passing such objects to `Message(elements=...)` to prevent
+    # AttributeError and un-awaited coroutine warnings. If the widget doesn't
+    # support `.send`, fall back to a friendly instruction message.
+    send_method = getattr(editor, "send", None)
+    if callable(send_method):
+        await cl.Message(
+            content="✏️ Edit the draft below and click Save:",
+            parent_id=parent_message_id,
+            elements=[editor],
+            actions=[cl.Action(name="submit_inline_editor", payload={}, label="💾 Save Updated Draft")],
+        ).send()
+    else:
+        await cl.Message(content="Inline editor isn't supported by this Chainlit version. Use 'View Markdown' to edit the draft.").send()
+
+
+@cl.action_callback("edit_draft")
+async def on_edit_draft_alias(action: cl.Action):
+    """Alias for `open_inline_editor` so the `edit_draft` action can be used in handlers.
+
+    This keeps the handlers small: both `open_inline_editor` and `edit_draft` now open the
+    same inline editor.
+    """
+    # Reuse the existing open_inline_editor logic
+    await on_open_inline_editor(action)
 
 
 @cl.action_callback("regenerate_draft")

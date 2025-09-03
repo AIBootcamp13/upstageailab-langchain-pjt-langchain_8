@@ -52,6 +52,8 @@ async def process_initial_draft(agent: BlogContentAgent, session_id: str):
 
     draft_msg = cl.Message(content="", author="🤖 BlogGenerator")
     await draft_msg.send()
+    # Remember the preview message id so inline editor submissions can update it
+    cl.user_session.set("preview_message_id", draft_msg.id)
     
     # Stream the draft content
     chunk_size = 10
@@ -67,6 +69,7 @@ async def process_initial_draft(agent: BlogContentAgent, session_id: str):
         actions=[
             cl.Action(name="save_draft", payload={"value": "save"}, label="💾 Save Draft"),
             cl.Action(name="view_markdown", payload={"value": "view"}, label="📋 View Markdown"),
+            cl.Action(name="open_inline_editor", payload={"message_id": draft_msg.id}, label="✏️ Edit"),
             cl.Action(name="toggle_tokens", payload={"value": "toggle"}, label="📊 Show Tokens"),
             cl.Action(name="list_artifacts", payload={"value": "list"}, label="📄 List Artifacts"),
             # cl.Action(name="publish_post", payload={"value": "publish"}, label="🚀 Publish Post"),
@@ -162,12 +165,15 @@ async def on_message(message: cl.Message):
 
     if draft_updated:
         cl.user_session.set(SessionKey.BLOG_DRAFT, draft_msg.content)
+        # Keep track of the preview message for inline edits
+        cl.user_session.set("preview_message_id", draft_msg.id)
         await draft_msg.update()
         await cl.Message(
             content="✅ Draft has been updated.",
             actions=[
                 cl.Action(name="save_draft", payload={"value": "save"}, label="💾 Save Draft"),
                 cl.Action(name="view_markdown", payload={"value": "view"}, label="📋 View Markdown"),
+                cl.Action(name="open_inline_editor", payload={"message_id": draft_msg.id}, label="✏️ Edit"),
                 cl.Action(name="toggle_tokens", payload={"value": "toggle"}, label="📊 Show Tokens"),
                 # cl.Action(name="publish_post", payload={"value": "publish"}, label="🚀 Publish Post"),
             ],

@@ -159,3 +159,8 @@ defaults:
 #
 # ENV
 # poetry env activate
+# 
+# Pytest verbose mode example
+# poetry run pytest -q tests/test_chainlit_edit_callbacks.py -q -rP
+# 
+# 
