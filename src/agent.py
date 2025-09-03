@@ -198,8 +198,11 @@ class BlogContentAgent:
             pd = cl.user_session.get(SessionKey.PROCESSED_DOCUMENTS)
             if pd and isinstance(pd, list):
                 self.documents = pd
-                # update initial_state draft to match rebuilt documents
-                initial_state["draft"] = "\n\n".join([doc.page_content for doc in self.documents])
+                # Only replace the initial_state draft when it is empty. If a
+                # draft was already provided (e.g., user edited it), prefer
+                # that over reconstructed documents.
+                if not initial_state.get("draft"):
+                    initial_state["draft"] = "\n\n".join([doc.page_content for doc in self.documents])
         except Exception:
             pass
 
@@ -208,10 +211,23 @@ class BlogContentAgent:
             import chainlit as cl
             awaitable = getattr(cl, "Message", None)
             if awaitable:
-                # Send a short debug message with sizes (non-blocking best-effort)
+                # Send a short debug message with sizes (best-effort).
                 try:
-                    cl.Message(content=f"[debug] initial_state draft length={len(initial_state['draft'])}").send()
+                    msg = cl.Message(content=f"[debug] initial_state draft length={len(initial_state['draft'])}")
+                    # We're in a synchronous generator context; schedule the send
+                    # so we don't produce RuntimeWarning for un-awaited coroutines.
+                    try:
+                        import asyncio
+
+                        asyncio.create_task(msg.send())
+                    except Exception:
+                        # As a last resort, call .send() without awaiting and ignore warnings
+                        try:
+                            msg.send()
+                        except Exception:
+                            pass
                 except Exception:
+                    # Best-effort debug msg; ignore failures
                     pass
         except Exception:
             # Not running in Chainlit context

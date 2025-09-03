@@ -162,5 +162,5 @@ defaults:
 # 
 # Pytest verbose mode example
 # poetry run pytest -q tests/test_chainlit_edit_callbacks.py -q -rP
-# 
+#  pkill -f 'chainlit' || true; sleep 1; poetry run chainlit run src/chainlit_app.py -w &> /tmp/chainlit_run.log & echo $! 
 # 

@@ -102,6 +102,38 @@ async def on_message(message: cl.Message):
     
     session_id = cl.user_session.get(SessionKey.SESSION_ID)
     agent: BlogContentAgent = cl.user_session.get(SessionKey.BLOG_CREATOR_AGENT)
+    # Manual edit fallback: if user clicked "Edit by sending message" the next
+    # user message should be treated as the edited draft and not routed to the agent.
+    expect_manual = cl.user_session.get("expect_manual_edit", False)
+    if expect_manual:
+        # Reset the flag first to avoid re-entrancy
+        cl.user_session.set("expect_manual_edit", False)
+        # Extract text content from the message
+        edited_text = getattr(message, "content", "") or ""
+        if not isinstance(edited_text, str) or not edited_text.strip():
+            await cl.Message(content="No text received. Please send the edited draft as a chat message.").send()
+            return
+        # Persist edited draft in session
+        cl.user_session.set(SessionKey.BLOG_DRAFT, edited_text.strip())
+        # Update preview if available
+        preview_msg_id = cl.user_session.get("preview_message_id")
+        if preview_msg_id:
+            msg = cl.Message(id=preview_msg_id)
+            # Set fields on the Message object and call update() without kwargs
+            msg.content = "📄 Live Preview"
+            msg.elements = [cl.Text(content=edited_text.strip(), language="markdown", name="markdown_preview")]
+            await msg.update()
+        # Show a confirmation with helpful follow-up actions attached to the preview
+        await cl.Message(
+            content="✅ Draft updated from your message.",
+            parent_id=preview_msg_id,
+            actions=[
+                cl.Action(name="save_draft", payload={"value": "save"}, label="💾 Save Draft"),
+                cl.Action(name="view_markdown", payload={"value": "view"}, label="📋 View Markdown"),
+                cl.Action(name="open_inline_editor", payload={"message_id": preview_msg_id}, label="✏️ Edit"),
+            ],
+        ).send()
+        return
     
     # Check for file uploads if the agent has not been initialized yet
     if not agent:

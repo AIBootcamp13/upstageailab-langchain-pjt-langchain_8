@@ -96,14 +96,18 @@ async def on_submit_inline_editor(action: cl.Action):
         # Update preview on submit as well
         preview_msg_id = cl.user_session.get("preview_message_id")
         if preview_msg_id:
-            await cl.Message(id=preview_msg_id).update(
-                content="📄 Live Preview",
-                elements=[cl.Text(content=new_draft.strip(), language="markdown", name="markdown_preview")]
-            )
+            # Some Chainlit Message constructors require a content argument;
+            # pass an empty content when referencing by id so .update() works.
+            msg = cl.Message(id=preview_msg_id)
+            msg.content = "📄 Live Preview"
+            msg.elements = [cl.Text(content=new_draft.strip(), language="markdown", name="markdown_preview")]
+            await msg.update()
         await cl.Message(
             content="✅ Draft updated successfully from the inline editor.",
             actions=[
-                cl.Action(name="save_draft", payload={"value": "save"}, label="💾 Save Updated Draft")
+                cl.Action(name="save_draft", payload={"value": "save"}, label="💾 Save Updated Draft"),
+                cl.Action(name="view_markdown", payload={"value": "view"}, label="📋 View Markdown"),
+                cl.Action(name="toggle_tokens", payload={"value": "toggle"}, label="📊 Show Tokens"),
             ],
         ).send()
     else:
@@ -163,9 +167,9 @@ async def on_open_inline_editor(action: cl.Action):
         try:
             editor = iw.TextArea(id="editor", label="Edit Draft", initial_value=draft)
         except Exception:
-            # As a last resort, send a message instructing the user how to
-            # edit via the preview workflow.
-            await cl.Message(content="Inline editor is not supported by the running Chainlit version.").send()
+            # As a last resort, do not show a noisy message announcing lack of
+            # inline editor support; we prefer the manual-edit action below.
+            # await cl.Message(content="Inline editor is not supported by the running Chainlit version.").send()
             return
 
     # Some Chainlit/input_widget versions expose widget objects that do not
@@ -182,7 +186,25 @@ async def on_open_inline_editor(action: cl.Action):
             actions=[cl.Action(name="submit_inline_editor", payload={}, label="💾 Save Updated Draft")],
         ).send()
     else:
-        await cl.Message(content="Inline editor isn't supported by this Chainlit version. Use 'View Markdown' to edit the draft.").send()
+        # Offer a manual edit fallback: user can send the edited draft as their
+        # next message. We intentionally suppress the explanatory text to keep
+        # the UI minimal; the action button below will start the manual edit flow.
+        await cl.Message(
+            content="",
+            parent_id=parent_message_id,
+            actions=[cl.Action(name="start_manual_edit", payload={}, label="✏️ Edit by sending message")],
+        ).send()
+
+
+@cl.action_callback("start_manual_edit")
+async def on_start_manual_edit(action: cl.Action):
+    """Begin a manual edit flow: the next user message will replace the draft.
+
+    This flow is a robust fallback when input widgets are not supported by the
+    running Chainlit version.
+    """
+    cl.user_session.set("expect_manual_edit", True)
+    await cl.Message(content="Send your edited draft as a new chat message; it will replace the current draft.").send()
 
 
 @cl.action_callback("edit_draft")
