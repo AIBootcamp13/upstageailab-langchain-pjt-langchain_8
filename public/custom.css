@@ -7,10 +7,23 @@
 }
 
 /* Ensure Chainlit Text elements don't truncate long markdown content */
-.cl-text, .cl-text pre, .cl-text .cl-markdown {
-    /* Make long markdown blocks scrollable while keeping layout tidy */
-    max-height: 600px !important;
-    height: auto !important;
+/* Make long markdown blocks scrollable while keeping layout tidy.
+   Target multiple selectors used by different Chainlit versions so this
+   rule applies more reliably across deployments. Use a viewport-relative
+   max-height so very long content is scrollable but doesn't dominate the UI. */
+.cl-text, .cl-text pre, .cl-text .cl-markdown, .cl-markdown, .cl-message .cl-text, .cl-message .cl-markdown {
+    max-height: 60vh !important;
     overflow-y: auto !important;
-    white-space: pre-wrap !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+    white-space: pre-wrap !important; /* allow wrapping of long paragraphs */
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+}
+
+/* Ensure code blocks inside markdown also scroll when very long */
+.cl-text pre, .cl-markdown pre, pre.cl-markdown, .cl-text code, .cl-markdown code {
+    max-height: 50vh !important;
+    overflow: auto !important;
+    white-space: pre !important; /* preserve code formatting */
 }

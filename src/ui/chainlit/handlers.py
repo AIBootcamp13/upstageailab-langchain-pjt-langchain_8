@@ -213,3 +213,17 @@ async def on_message(message: cl.Message):
 
     if chat_started:
         await chat_msg.update()
+        # If the agent presented content via the chat message (e.g., final draft)
+        # but we didn't stream a separate draft message, provide the same follow-up
+        # action bar so the user can Save/View/Edit the presented content.
+        if not draft_updated:
+            await cl.Message(
+                content="✅ Draft presented. How would you like to proceed?",
+                parent_id=chat_msg.id,
+                actions=[
+                    cl.Action(name="save_draft", payload={"value": "save"}, label="💾 Save Draft"),
+                    cl.Action(name="view_markdown", payload={"value": "view"}, label="📋 View Markdown"),
+                    cl.Action(name="open_inline_editor", payload={"message_id": chat_msg.id}, label="✏️ Edit"),
+                    cl.Action(name="toggle_tokens", payload={"value": "toggle"}, label="📊 Show Tokens"),
+                ],
+            ).send()
