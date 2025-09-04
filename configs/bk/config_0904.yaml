@@ -26,31 +26,19 @@ app:
 # -----------------------------------------------------------------------------
 profiles:
   default_cpu:
-    description: "External API and lightweight local models"
+    description: "External API"
     llm_provider: "openai"
     llm_model: "gpt-4o"
     embedding_provider: "openai"
     embedding_model: "text-embedding-3-large"
-    # --- NEW SECTIONS START ---
-    vision_provider: "huggingface"
-    vision_model: "llava-hf/llava-1.5-7b-hf" # Example lightweight vision model
-    asr_provider: "huggingface"
-    asr_model: "openai/whisper-tiny" # Example lightweight ASR model
-    # --- NEW SECTIONS END ---
     icon: ""
 
   high_gpu:
-    description: "Local GPU with powerful models"
+    description: "Local GPU"
     llm_provider: "ollama"
     llm_model: "gemma3:4b-it-qat"
     embedding_provider: "huggingface"
     embedding_model: "jhgan/ko-sroberta-multitask"
-    # --- NEW SECTIONS START ---
-    vision_provider: "huggingface"
-    vision_model: "llava-hf/llava-v1.6-34b-hf" # Your target powerful model
-    asr_provider: "huggingface"
-    asr_model: "Upstage/phi-3-multimodal-instruct-ko-asr" # Your target powerful model
-    # --- NEW SECTIONS END ---
     icon: ""
 
 # -----------------------------------------------------------------------------

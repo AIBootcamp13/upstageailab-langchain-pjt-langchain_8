@@ -1,5 +1,6 @@
 
-# 📝 Blog Content Creator Agent
+# 📝 Blog Content Creator Agent 
+# (Refactor: feat. Chainlit UI)
 
 **PDF 문서를 고품질 블로그 포스트로 자동 변환하고 GitHub Pages에 게시하는 LangChain 기반 자동화 시스템입니다.**
 
@@ -15,7 +16,7 @@
 
 
 ## 🎨 주요 기능 데모 (Key Features Demo)
-
+<!-- 
 | 파일 업로드 | 실시간 콘텐츠 편집 |
 | :---: | :---: |
 | <a href="docs/assets/images/demo/streamlit-ui-fileupload-screen.png"><img src="docs/assets/images/demo/streamlit-ui-fileupload-screen.png" alt="File upload screen" width="100%" /></a> | <a href="docs/assets/images/demo/streamlit-ui-live-editor.png"><img src="docs/assets/images/demo/streamlit-ui-live-editor.png" alt="Streamlit live editor" width="100%" /></a> |
@@ -27,7 +28,7 @@
 | <a href="docs/assets/images/demo/ai-generated-blogs-home.png"><img src="docs/assets/images/demo/ai-generated-blogs-home.png" alt="Blogs home" width="100%" /></a> | <a href="docs/assets/images/demo/ai-generated-blog-post-tables.png"><img src="docs/assets/images/demo/streamlit-ui-markdown-preview.png" alt="streamlit-ui-markdown-preview.png" width="100%" /></a> |
 | **5. 발행된 블로그 확인** | **6. Markdown 미리보기** |
 
-  
+   -->
 
 ## 🚀 빠른 시작 (Quick Start)
 
@@ -179,11 +180,6 @@ graph TD
 이 프로젝트에 기여하고 싶으신가요? [기여 가이드](docs/5_CONTRIBUTING.md)를 참고하여 함께 프로젝트를 발전시켜주세요. 모든 기여를 환영합니다!
 
 ## **👥 팀 구성원**
-| ![조의영](https://avatars.githubusercontent.com/u/4915390?v=4) | ![최웅비](https://avatars.githubusercontent.com/u/97170457?v=4) | ![고민주](https://avatars.githubusercontent.com/u/204635884?v=4) | ![박성진](https://avatars.githubusercontent.com/u/204808507?v=4) | ![조은별](https://avatars.githubusercontent.com/u/178245805?v=4) | ![김효석](https://avatars.githubusercontent.com/u/159979869?v=4) |
-|:---:|:---:|:---:|:---:|:---:|:---:|
-| [조의영](https://github.com/yuiyeong) | [최웅비](https://github.com/Wchoi189) | [고민주](https://github.com/PaperToCode) | [박성진](https://github.com/psj2024p) | [조은별](https://github.com/eunbyul2) | [김효석](https://github.com/david1005910) |
-| 팀장 | 개발자 | 개발자 | 개발자 | 개발자 | 개발자 |
-
 
 ## 📄 라이선스 (License)
 

@@ -143,18 +143,19 @@ async def on_message(message: cl.Message):
         #     await cl.Message(content="Please upload a PDF file to start.").send()
         #     return
 
+        # --- AFTER ---
+        # 이제 모든 종류의 파일을 허용하고, 전처리 단계에서 유형을 처리합니다.
+        # Chainlit의 파일 업로드 기능이 활성화되어 있어야 합니다. (.chainlit/config.toml)
         uploaded_files = [
             file for file in message.elements if isinstance(file, cl.File)
         ]
+        
         if not uploaded_files:
-            await cl.Message(content="To begin, please upload a document (PDF, MD, PY, etc.).").send()
+            await cl.Message(content="To begin, please upload a document (PDF, JPG, PNG, MP3, etc.).").send()
             return
 
-        ingestion_successful = await ingest_documents(uploaded_files)            
-        # 1. Ingest documents from the uploaded file(s)
-        # ingestion_successful = await ingest_documents(pdf_files)
-        if not ingestion_successful:
-            return # Ingestion failed, user was notified.
+        # 나머지 로직은 동일하게 유지됩니다.
+        ingestion_successful = await ingest_documents(uploaded_files)
 
         # 2. Setup the agent with the default model
         # Use the configured DEFAULT_PROFILE from configs/config.yaml to avoid
