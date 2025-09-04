@@ -110,15 +110,15 @@ Thumbs.db
 
 # Ruff cache
 .ruff_cache/
-
+.github
 # etc
 .viminfo
 log/
 logs/
 poetry.lock
 data
-
-
+README.md
+docs/
 # dev
 # Project-specific ignores
 
@@ -157,4 +157,5 @@ log/
 # Do not ignore these (force include)
 !docs/assets/images/pdf-parser
 !docs/feature-summary
-tmp_site_clone/
+jekyll-site/
+archives/
