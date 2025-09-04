@@ -1,165 +1,26 @@
-# src/ui/chainlit/handlers.py
-
-import uuid
-from typing import List
-import chainlit as cl
-
-from src.ui.chainlit.settings import setup_settings, PROVIDER_LABELS
-from src.ui.chainlit.icons import PROVIDER_ICONS
-from src.agent import BlogContentAgent
-from src.config import CONFIG, DEFAULT_PROFILE
-from src.ui.chainlit.utils import setup_agent, ingest_documents
-from src.ui.enums import SessionKey
-
-@cl.on_chat_start
-async def on_chat_start():
-    """Called when a new chat session starts."""
-    session_id = str(uuid.uuid4())
-    cl.user_session.set(SessionKey.SESSION_ID, session_id)
-
-    # Get the selected chat profile and extract provider info
-    selected_profile = cl.user_session.get("chat_profile")
-    
-    # Safely handle profile selection
-    if selected_profile:
-        # Parse the profile name to extract provider
-        # Format: "emoji ProviderName" (e.g., "🤖 OpenAI", "🐏 Ollama", "🚀 Upstage")
-        provider_key = None
-        for key, display in PROVIDER_LABELS.items():
-            if display in selected_profile:
-                provider_key = key
-                break
-        
-        if provider_key:
-            # Get the first available model for this provider
-            providers = CONFIG.get("llm_providers", {})
-            models = providers.get(provider_key, [])
-            default_model = models[0] if models else ""
-            
-            cl.user_session.set("llm_provider", provider_key)
-            cl.user_session.set("llm_model", default_model)
-            cl.user_session.set("agent_profile", "draft")  # Default to draft agent
-        
-        cl.user_session.set("last_profile", selected_profile)
-
-    # The settings panel will be set up once after initializing session values
-    await setup_settings()
-
-async def process_initial_draft(agent: BlogContentAgent, session_id: str):
-    """Generates and streams the initial draft to the UI."""
-    draft = await cl.make_async(agent.generate_draft)(session_id=session_id)
-    cl.user_session.set(SessionKey.BLOG_DRAFT, draft)
-
-    draft_msg = cl.Message(content="", author="🤖 BlogGenerator")
-    await draft_msg.send()
-    # Remember the preview message id so inline editor submissions can update it
-    cl.user_session.set("preview_message_id", draft_msg.id)
-    
-    # Stream the draft content
-    chunk_size = 10
-    for i in range(0, len(draft), chunk_size):
-        part = draft[i : i + chunk_size]
-        await draft_msg.stream_token(part)
-    await draft_msg.update()
-
-    # Send a follow-up message with actions
-    await cl.Message(
-        content="Initial draft generated! How would you like to refine it?",
-        parent_id=draft_msg.id,
-        actions=[
-            cl.Action(name="save_draft", payload={"value": "save"}, label="💾 Save Draft"),
-            cl.Action(name="view_markdown", payload={"value": "view"}, label="📋 View Markdown"),
-            cl.Action(name="open_inline_editor", payload={"message_id": draft_msg.id}, label="✏️ Edit"),
-            cl.Action(name="toggle_tokens", payload={"value": "toggle"}, label="📊 Show Tokens"),
-            cl.Action(name="list_artifacts", payload={"value": "list"}, label="📄 List Artifacts"),
-            # cl.Action(name="publish_post", payload={"value": "publish"}, label="🚀 Publish Post"),
-        ],
-    ).send()
+# In src/ui/chainlit/handlers.py
 
 @cl.on_message
 async def on_message(message: cl.Message):
-    """Called when a user sends a message or uploads a file."""
-    # Check if profile changed
-    current_profile = cl.user_session.get("chat_profile")
-    last_profile = cl.user_session.get("last_profile")
-    if current_profile and current_profile != last_profile:
-        # Profile changed
-        cl.user_session.set("last_profile", current_profile)
-        # Parse provider
-        provider_key = None
-        for key, display in PROVIDER_LABELS.items():
-            if display in current_profile:
-                provider_key = key
-                break
-        if provider_key:
-            providers = CONFIG.get("llm_providers", {})
-            models = providers.get(provider_key, [])
-            default_model = models[0] if models else ""
-            cl.user_session.set("llm_provider", provider_key)
-            cl.user_session.set("llm_model", default_model)
-            await setup_settings()
-            # Provider changed - settings updated automatically
-    
+    """
+    사용자 메시지 또는 파일 업로드 시 호출됩니다.
+    이제 파일 업로드를 항상 최우선으로 처리합니다.
+    """
     session_id = cl.user_session.get(SessionKey.SESSION_ID)
-    agent: BlogContentAgent = cl.user_session.get(SessionKey.BLOG_CREATOR_AGENT)
-    # Manual edit fallback: if user clicked "Edit by sending message" the next
-    # user message should be treated as the edited draft and not routed to the agent.
-    expect_manual = cl.user_session.get("expect_manual_edit", False)
-    if expect_manual:
-        # Reset the flag first to avoid re-entrancy
-        cl.user_session.set("expect_manual_edit", False)
-        # Extract text content from the message
-        edited_text = getattr(message, "content", "") or ""
-        if not isinstance(edited_text, str) or not edited_text.strip():
-            await cl.Message(content="No text received. Please send the edited draft as a chat message.").send()
-            return
-        # Persist edited draft in session
-        cl.user_session.set(SessionKey.BLOG_DRAFT, edited_text.strip())
-        # Update preview if available
-        preview_msg_id = cl.user_session.get("preview_message_id")
-        if preview_msg_id:
-            msg = cl.Message(id=preview_msg_id)
-            # Set fields on the Message object and call update() without kwargs
-            msg.content = "📄 Live Preview"
-            msg.elements = [cl.Text(content=edited_text.strip(), language="markdown", name="markdown_preview")]
-            await msg.update()
-        # Show a confirmation with helpful follow-up actions attached to the preview
-        await cl.Message(
-            content="✅ Draft updated from your message.",
-            parent_id=preview_msg_id,
-            actions=[
-                cl.Action(name="save_draft", payload={"value": "save"}, label="💾 Save Draft"),
-                cl.Action(name="view_markdown", payload={"value": "view"}, label="📋 View Markdown"),
-                cl.Action(name="open_inline_editor", payload={"message_id": preview_msg_id}, label="✏️ Edit"),
-            ],
-        ).send()
-        return
     
-    # Check for file uploads if the agent has not been initialized yet
-    if not agent:
-        # --- OLD CODE (PDF ONLY) ---
-        # pdf_files = [file for file in message.elements if "pdf" in file.mime]
-        # if not pdf_files:
-        #     await cl.Message(content="Please upload a PDF file to start.").send()
-        #     return
+    # 1. 메시지에 파일이 포함되어 있는지 먼저 확인합니다.
+    uploaded_files = [
+        file for file in message.elements if isinstance(file, cl.File)
+    ]
 
-        # --- AFTER ---
-        # 이제 모든 종류의 파일을 허용하고, 전처리 단계에서 유형을 처리합니다.
-        # Chainlit의 파일 업로드 기능이 활성화되어 있어야 합니다. (.chainlit/config.toml)
-        uploaded_files = [
-            file for file in message.elements if isinstance(file, cl.File)
-        ]
-        
-        if not uploaded_files:
-            await cl.Message(content="To begin, please upload a document (PDF, JPG, PNG, MP3, etc.).").send()
-            return
-
-        # 나머지 로직은 동일하게 유지됩니다.
+    if uploaded_files:
+        # 파일이 있는 경우, 항상 새로 문서를 처리하고 에이전트를 설정합니다.
+        # 이것은 세션 중간에 새로운 소스 파일로 작업을 다시 시작할 수 있게 합니다.
         ingestion_successful = await ingest_documents(uploaded_files)
+        if not ingestion_successful:
+            return  # Ingestion failed, user was notified.
 
-        # 2. Setup the agent with the default model
-        # Use the configured DEFAULT_PROFILE from configs/config.yaml to avoid
-        # unintentionally falling back to an external API provider.
+        # 현재 UI 설정에 따라 에이전트를 설정합니다.
         default_profile_cfg = CONFIG.get("profiles", {}).get(DEFAULT_PROFILE, {})
         llm_provider = cl.user_session.get("llm_provider") or default_profile_cfg.get("llm_provider")
         llm_model = cl.user_session.get("llm_model") or default_profile_cfg.get("llm_model")
@@ -169,11 +30,18 @@ async def on_message(message: cl.Message):
             await cl.Message(content="Failed to initialize the agent. Please try again.").send()
             return
             
-        # 3. Generate and stream the initial draft
+        # 새로운 문서로부터 초기 초안을 생성하고 스트리밍합니다.
         await process_initial_draft(agent, session_id)
         return
 
-    # If agent exists, process the user's text message to update the draft
+    # 2. 파일이 없는 경우, 기존의 텍스트 메시지 처리 로직을 실행합니다.
+    agent: BlogContentAgent = cl.user_session.get(SessionKey.BLOG_CREATOR_AGENT)
+    if not agent:
+        # 에이전트가 없고 텍스트 메시지만 있는 경우 사용자에게 파일을 먼저 업로드하도록 안내합니다.
+        await cl.Message(content="To begin, please upload a source document (e.g., PDF, .png, .mp3).").send()
+        return
+
+    # 기존 에이전트가 있는 경우, 텍스트 메시지를 사용하여 초안을 업데이트합니다.
     draft = cl.user_session.get(SessionKey.BLOG_DRAFT, "")
     draft_msg = cl.Message(content="", author="📝 Draft")
     chat_msg = cl.Message(content="", author="🤖 BlogGenerator")
@@ -198,7 +66,6 @@ async def on_message(message: cl.Message):
 
     if draft_updated:
         cl.user_session.set(SessionKey.BLOG_DRAFT, draft_msg.content)
-        # Keep track of the preview message for inline edits
         cl.user_session.set("preview_message_id", draft_msg.id)
         await draft_msg.update()
         await cl.Message(
@@ -208,15 +75,11 @@ async def on_message(message: cl.Message):
                 cl.Action(name="view_markdown", payload={"value": "view"}, label="📋 View Markdown"),
                 cl.Action(name="open_inline_editor", payload={"message_id": draft_msg.id}, label="✏️ Edit"),
                 cl.Action(name="toggle_tokens", payload={"value": "toggle"}, label="📊 Show Tokens"),
-                # cl.Action(name="publish_post", payload={"value": "publish"}, label="🚀 Publish Post"),
             ],
         ).send()
 
     if chat_started:
         await chat_msg.update()
-        # If the agent presented content via the chat message (e.g., final draft)
-        # but we didn't stream a separate draft message, provide the same follow-up
-        # action bar so the user can Save/View/Edit the presented content.
         if not draft_updated:
             await cl.Message(
                 content="✅ Draft presented. How would you like to proceed?",
