@@ -15,8 +15,11 @@ def transcribe_audio(audio_path: Path, model_name: str) -> str:
     """
     try:
         # 'automatic-speech-recognition' 파이프라인을 사용하여 ASR 모델을 로드합니다.
-        transcriber = pipeline("automatic-speech-recognition", model=model_name)
-
+        transcriber = pipeline(
+            "automatic-speech-recognition", 
+            model=model_name, 
+            device=0  # Use the first available GPU
+)
         # 모델을 사용하여 오디오 파일을 텍스트로 변환합니다.
         # 긴 오디오의 경우 chunk_length_s를 설정하여 분할 처리할 수 있습니다.
         results = transcriber(str(audio_path), chunk_length_s=30)

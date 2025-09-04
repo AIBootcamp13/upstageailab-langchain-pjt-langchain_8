@@ -23,3 +23,5 @@ class SessionKey(str, Enum):
 
     IS_PUBLISHED = "is_published"
     SESSION_ID = "session_id"
+    VISION_MODEL = "vision_model"
+    ASR_MODEL = "asr_model"

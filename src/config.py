@@ -87,6 +87,14 @@ LLM_MODEL = ACTIVE_PROFILE["llm_model"]
 EMBEDDING_PROVIDER = ACTIVE_PROFILE["embedding_provider"]
 EMBEDDING_MODEL = ACTIVE_PROFILE["embedding_model"]
 
+# --- 이미지 및 음성 ---
+# Vision 및 ASR 모델 설정 (프로필에서 로드)
+VISION_PROVIDER = ACTIVE_PROFILE.get("vision_provider", "huggingface")
+VISION_MODEL = ACTIVE_PROFILE.get("vision_model")
+ASR_PROVIDER = ACTIVE_PROFILE.get("asr_provider", "huggingface")
+ASR_MODEL = ACTIVE_PROFILE.get("asr_model")
+
+# --- ADD THESE LINES END ---
 # 데이터 수집(Ingestion) 설정
 INGESTION_CONFIG = CONFIG.get("ingestion", {})
 INGESTION_PARSER = INGESTION_CONFIG.get("parser", "local")
